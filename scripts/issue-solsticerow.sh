@@ -2,8 +2,8 @@
 # Run this from the ~/certbot directory (where the certbot docker-compose service is defined).
 set -euo pipefail
 
-DOMAIN="solsticerow.nvarscar.ca"
-EMAIL="admin@nvarscar.ca"
+DOMAIN="${DOMAIN:-solsticerow.nvarscar.ca}"
+EMAIL="${EMAIL:-admin@nvarscar.ca}"
 
 exec docker compose run --rm certbot certonly \
   --manual \

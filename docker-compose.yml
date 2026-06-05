@@ -8,6 +8,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATA_DIR=/data
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-}
       # Set these in a .env file or export them before running docker compose
       # Get free keys at https://cloudflare.com/turnstile
       - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
@@ -18,6 +19,8 @@ services:
 
   nginx:
     image: nginx:alpine
+    environment:
+      - DOMAIN=${DOMAIN:-solsticerow.nvarscar.ca}
     ports:
       - "12080:80"
       - "12443:443"

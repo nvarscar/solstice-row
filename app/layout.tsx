@@ -9,7 +9,7 @@ const ogDescription =
   `${event.heroSubtitle}`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(event.siteUrl),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || event.siteUrl),
   title: `${event.name} ${event.edition} — Row Through the Longest Day`,
   description: event.description,
   openGraph: {
