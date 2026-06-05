@@ -264,6 +264,7 @@ export default function DashboardPage() {
     type: null,
   });
   const [addDelta, setAddDelta] = useState<Record<string, { boatM: string; ergM: string }>>({});
+  const [metricsDraft, setMetricsDraft] = useState<Record<string, { boatM?: string; ergM?: string }>>({});
   const [sortBy, setSortBy] = useState<"name" | "distance">("name");
   const dirtyRef = useRef(new Set<string>());
   const [dirtyTeamIds, setDirtyTeamIdsState] = useState(new Set<string>());
@@ -273,6 +274,7 @@ export default function DashboardPage() {
   function markDirty(id: string) {
     dirtyRef.current = new Set(dirtyRef.current).add(id);
     setDirtyTeamIdsState(new Set(dirtyRef.current));
+    setStatus({ msg: "", type: null });
   }
   function clearDirty(id: string) {
     const next = new Set(dirtyRef.current);
@@ -312,6 +314,8 @@ export default function DashboardPage() {
 
   useEffect(() => { loadTeams(); }, [loadTeams]);
 
+  useEffect(() => { setStatus({ msg: "", type: null }); }, [tab]);
+
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
       if (dirtyRef.current.size > 0) {
@@ -324,14 +328,22 @@ export default function DashboardPage() {
   }, []);
 
   function updateMeters(id: string, field: "boatM" | "ergM", raw: string) {
+    setMetricsDraft((prev) => ({ ...prev, [id]: { ...prev[id], [field]: raw } }));
+  }
+
+  function commitMeters(id: string, field: "boatM" | "ergM") {
     if (!teamsData) return;
-    const val = parseFloat(raw) || 0;
+    const raw = metricsDraft[id]?.[field];
+    if (raw === undefined) return;
+    const val = parseFloat(raw);
+    const committed = isNaN(val) ? 0 : Math.max(0, val);
     setTeamsData({
       ...teamsData,
       teams: teamsData.teams.map((t) =>
-        t.id === id ? { ...t, [field]: Math.max(0, val) } : t
+        t.id === id ? { ...t, [field]: committed } : t
       ),
     });
+    setMetricsDraft((prev) => { const next = { ...prev }; if (next[id]) delete next[id][field]; return next; });
     markDirty(id);
   }
 
@@ -680,8 +692,9 @@ export default function DashboardPage() {
                               type="number"
                               min="0"
                               step="1"
-                              value={team[field]}
+                              value={metricsDraft[team.id]?.[field] !== undefined ? metricsDraft[team.id][field] : team[field]}
                               onChange={(e) => updateMeters(team.id, field, e.target.value)}
+                              onBlur={() => commitMeters(team.id, field)}
                               className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-solstice-gold/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <div className="flex gap-1.5 mt-1.5">
