@@ -59,18 +59,18 @@ export default function Schedule({ items, date }: ScheduleProps) {
             {sorted.map((item, i) => (
               <div
                 key={i}
-                className="relative flex gap-4 sm:gap-6 group"
+                className="relative flex gap-4 sm:gap-6 group items-start"
               >
-                <div className="flex-shrink-0 w-20 sm:w-24 text-right pt-6 pr-3">
+                <div className="flex-shrink-0 w-20 sm:w-24 h-14 flex items-center justify-end pr-3">
                   <span className="text-xs sm:text-sm text-forest-300 font-mono">
                     {item.time}
                   </span>
                 </div>
 
-                <div className="relative flex-shrink-0 pt-6">
+                <div className="relative flex-shrink-0 h-14 flex items-center">
                   <div
                     className={clsx(
-                      "w-3 h-3 rounded-full mt-0.5 ring-2 ring-forest-950 transition-transform group-hover:scale-125",
+                      "w-3 h-3 rounded-full ring-2 ring-forest-950 transition-transform group-hover:scale-125",
                       categoryDots[item.category] ?? "bg-white/50"
                     )}
                   />
