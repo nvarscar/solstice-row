@@ -1,0 +1,26 @@
+{
+  "tiers": [
+    {
+      "name": "Gold",
+      "sponsors": [
+        { "name": "Pacific Northwest Rowing", "url": "https://example.com", "logo": "" },
+        { "name": "Cascade Outfitters", "url": "https://example.com", "logo": "" }
+      ]
+    },
+    {
+      "name": "Silver",
+      "sponsors": [
+        { "name": "Lake District Brewing", "url": "https://example.com", "logo": "" },
+        { "name": "Nordic Fitness", "url": "https://example.com", "logo": "" },
+        { "name": "Summit Sports Medicine", "url": "https://example.com", "logo": "" }
+      ]
+    },
+    {
+      "name": "Bronze",
+      "sponsors": [
+        { "name": "Watershed Coffee", "url": "https://example.com", "logo": "" },
+        { "name": "Blue Heron Photography", "url": "https://example.com", "logo": "" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Solstice Row",
+  "tagline": "Row Through the Longest Day",
+  "edition": "2025",
+  "date": "June 21, 2025",
+  "location": "Lake Meridian, Kent, WA",
+  "startTime": "5:00 AM",
+  "description": "Solstice Row is an annual open-water rowing event held on the summer solstice — the longest day of the year. Rowers of all skill levels are welcome to participate in a dawn-to-dusk celebration of the sport on the water.",
+  "heroSubtitle": "The longest day of the year. The best day to row.",
+  "registrationUrl": "https://example.com/register",
+  "registrationOpen": true,
+  "registrationDeadline": "June 14, 2025",
+  "contactEmail": "info@solsticerow.com",
+  "contactPhone": "(206) 555-0170"
+}

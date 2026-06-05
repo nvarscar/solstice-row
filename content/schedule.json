@@ -1,0 +1,58 @@
+{
+  "items": [
+    {
+      "time": "5:00 AM",
+      "title": "Dawn Row — Open Water",
+      "description": "Optional early-morning row to greet the solstice sunrise. All experience levels welcome.",
+      "category": "row"
+    },
+    {
+      "time": "7:00 AM",
+      "title": "Registration & Check-in Opens",
+      "description": "Pick up your race packet, number, and timing chip at the main tent.",
+      "category": "logistics"
+    },
+    {
+      "time": "8:30 AM",
+      "title": "Welcome Ceremony",
+      "description": "Opening remarks from event organizers and safety briefing.",
+      "category": "ceremony"
+    },
+    {
+      "time": "9:00 AM",
+      "title": "Single Scull — 5K Race",
+      "description": "Individual sculling event. Course marked with buoys on the lake.",
+      "category": "race"
+    },
+    {
+      "time": "10:30 AM",
+      "title": "Double Scull & Pair — 5K Race",
+      "description": "Two-person boat categories. Heats assigned at check-in.",
+      "category": "race"
+    },
+    {
+      "time": "12:00 PM",
+      "title": "Lunch & Open Paddle",
+      "description": "Community lunch provided. Open-water recreational row open to all.",
+      "category": "social"
+    },
+    {
+      "time": "2:00 PM",
+      "title": "Four & Eight — 5K Race",
+      "description": "Coxed and coxless four, plus eight-person shells compete.",
+      "category": "race"
+    },
+    {
+      "time": "4:30 PM",
+      "title": "Awards Ceremony",
+      "description": "Medal and trophy presentation for all race categories.",
+      "category": "ceremony"
+    },
+    {
+      "time": "5:30 PM",
+      "title": "Solstice Sunset Social",
+      "description": "Celebrate the longest day with fellow rowers. Food, music, and community.",
+      "category": "social"
+    }
+  ]
+}

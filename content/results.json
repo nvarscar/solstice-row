@@ -1,0 +1,33 @@
+{
+  "years": [
+    {
+      "year": "2024",
+      "categories": [
+        {
+          "name": "Single Scull — Open",
+          "entries": [
+            { "place": 1, "name": "Jordan Rivers", "club": "Lake Union Crew", "time": "18:42" },
+            { "place": 2, "name": "Sam Chen", "club": "Green Lake RC", "time": "19:05" },
+            { "place": 3, "name": "Alex Novak", "club": "Everett RC", "time": "19:31" }
+          ]
+        },
+        {
+          "name": "Single Scull — Masters",
+          "entries": [
+            { "place": 1, "name": "Pat Holloway", "club": "Pocock RC", "time": "20:14" },
+            { "place": 2, "name": "Robin Marsh", "club": "Seattle RC", "time": "20:58" },
+            { "place": 3, "name": "Terry Wu", "club": "Lake Union Crew", "time": "21:33" }
+          ]
+        },
+        {
+          "name": "Double Scull",
+          "entries": [
+            { "place": 1, "name": "Taylor & Morgan", "club": "Green Lake RC", "time": "17:08" },
+            { "place": 2, "name": "Lee & Park", "club": "Everett RC", "time": "17:44" },
+            { "place": 3, "name": "Reyes & Kim", "club": "Pocock RC", "time": "18:02" }
+          ]
+        }
+      ]
+    }
+  ]
+}
