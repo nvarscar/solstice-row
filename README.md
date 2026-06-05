@@ -86,7 +86,6 @@ Event details, schedule, and sponsor data are stored as JSON files in `content/`
 |------|-----------------|
 | `content/event.json` | Event name, date, venue, donation URL, contact email, cause description, event format |
 | `content/schedule.json` | Day-of schedule items (time, title, description, category) |
-| `content/teams.json` | Seed data only — copied into SQLite (`teams.db`) on first run; live data lives in the Docker volume |
 | `content/sponsors.json` | Sponsor tiers (Gold / Silver / Bronze) with name, URL, and optional logo path |
 
 #### Updating the Team Leaderboard (event day)
@@ -159,12 +158,10 @@ Edit `content/event.json`. Key fields:
 ├── content/                    # JSON content files (served + edited at runtime)
 │   ├── event.json
 │   ├── schedule.json
-│   ├── teams.json
 │   └── sponsors.json
 ├── lib/
 │   ├── auth.ts                 # Password hashing, token creation, credential I/O
 │   ├── db.ts                   # SQLite database singleton + team CRUD operations
-│   └── teams-file.ts           # (legacy) Resolves teams.json path — do not use for teams
 ├── proxy.ts                    # Auth guard for /admin/* and /api/content/* (Next.js 16 proxy convention)
 ├── nginx/
 │   ├── docker-entrypoint.sh    # Detects certs, selects http-only or https config
@@ -371,7 +368,7 @@ All mutable runtime data lives in the `solstice_data` named Docker volume, mount
 | `/data/teams.db` | All team registrations — SQLite database with WAL mode for concurrent access |
 | `/data/auth/credentials.json` | Admin username + hashed password |
 
-**On first container start**, the database is created automatically on first access and seeded from `content/teams.json` (only if `/data/teams.db` doesn't already exist).
+**On first container start**, the database is created automatically on first access.
 
 ### Backup (SQLite)
 

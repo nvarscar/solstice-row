@@ -184,30 +184,6 @@ function initSchema(db: Database.Database): void {
     }
   }
 
-  const { c } = db.prepare("SELECT COUNT(*) as c FROM teams").get() as { c: number };
-  if (c === 0) {
-    const jsonPath = path.join(process.cwd(), "content", "teams.json");
-    if (fs.existsSync(jsonPath)) {
-      try {
-        const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8")) as TeamsData;
-        const insert = db.prepare(`
-          INSERT OR IGNORE INTO teams
-            (id, name, captain, captainEmail, captainPhone, club, members, boatM, ergM,
-             pledgePerKm, notes, status, registeredAt)
-          VALUES
-            (@id, @name, @captain, @captainEmail, @captainPhone, @club, @members, @boatM, @ergM,
-             @pledgePerKm, @notes, @status, @registeredAt)
-        `);
-        db.transaction((teams: Team[]) => {
-          for (const t of teams) insert.run(t);
-        })(raw.teams);
-        if (raw.eventYear) db.prepare("UPDATE meta SET value = ? WHERE key = 'eventYear'").run(raw.eventYear);
-        if (raw.eventDate) db.prepare("UPDATE meta SET value = ? WHERE key = 'eventDate'").run(raw.eventDate);
-      } catch {
-        // seeding failed; continue with empty DB
-      }
-    }
-  }
 }
 
 export function getAllScheduleItems(db: Database.Database): ScheduleItem[] {
