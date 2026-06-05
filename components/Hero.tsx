@@ -95,9 +95,7 @@ export default function Hero({
           {registrationOpen ? (
             <>
               <a
-                href={registrationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/register"
                 className="px-8 py-3.5 bg-solstice-gold text-forest-950 font-bold text-base rounded-xl hover:bg-solstice-gold-light hover:shadow-lg hover:shadow-solstice-gold/25 transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 Register Your Team

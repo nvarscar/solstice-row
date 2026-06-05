@@ -58,9 +58,7 @@ export default function Nav({ registrationUrl, registrationOpen }: NavProps) {
         <div className="hidden md:block">
           {registrationOpen ? (
             <a
-              href={registrationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/register"
               className="px-4 py-2 bg-solstice-gold text-forest-950 text-sm font-semibold rounded-lg hover:bg-solstice-gold-light transition-colors"
             >
               Register Now
@@ -98,9 +96,7 @@ export default function Nav({ registrationUrl, registrationOpen }: NavProps) {
             {registrationOpen && (
               <li>
                 <a
-                  href={registrationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/register"
                   className="block w-full text-center px-4 py-2 bg-solstice-gold text-forest-950 font-semibold rounded-lg mt-2"
                 >
                   Register Now

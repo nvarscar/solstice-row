@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
@@ -9,10 +11,19 @@ import Footer from "@/components/Footer";
 
 import eventData from "@/content/event.json";
 import scheduleData from "@/content/schedule.json";
-import teamsData from "@/content/teams.json";
 import sponsorsData from "@/content/sponsors.json";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
+  const teamsRaw = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), "content", "teams.json"), "utf-8")
+  );
+  const teamsData = {
+    ...teamsRaw,
+    teams: teamsRaw.teams.filter((t: { status?: string }) => t.status === "approved"),
+  };
+
   return (
     <main>
       <Nav

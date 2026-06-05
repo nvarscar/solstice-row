@@ -1,37 +1,67 @@
 {
   "eventYear": "2026",
   "eventDate": "July 21, 2026",
-  "lastUpdated": "2026-07-21T05:17:00",
+  "lastUpdated": "2026-06-05T06:04:29.613Z",
   "teams": [
     {
       "id": "rusted-riggers",
       "name": "Rusted Riggers",
       "captain": "Carl Schoch",
+      "captainEmail": "cschochak@gmail.com",
+      "captainPhone": "",
       "members": 6,
-      "boatKm": 0,
-      "ergKm": 0,
+      "boatM": 234,
+      "ergM": 234,
       "club": "VCRC",
-      "pledgePerKm": 2.50
+      "pledgePerKm": 2.5,
+      "notes": "",
+      "status": "approved",
+      "registeredAt": "2026-07-01T00:00:00Z"
     },
     {
       "id": "team-crushed-souls",
       "name": "Team Crushed-Souls",
       "captain": "Jane Smith",
+      "captainEmail": "",
+      "captainPhone": "",
       "members": 4,
-      "boatKm": 0,
-      "ergKm": 0,
+      "boatM": 0,
+      "ergM": 0,
       "club": "VRS",
-      "pledgePerKm": 1.75
+      "pledgePerKm": 1.75,
+      "notes": "",
+      "status": "approved",
+      "registeredAt": "2026-07-01T00:00:00Z"
     },
     {
       "id": "sunrise-scullers",
       "name": "Sunrise Scullers",
       "captain": "Alex Torres",
+      "captainEmail": "",
+      "captainPhone": "",
       "members": 8,
-      "boatKm": 0,
-      "ergKm": 0,
+      "boatM": 0,
+      "ergM": 0,
       "club": "VCRC",
-      "pledgePerKm": 3.00
+      "pledgePerKm": 3,
+      "notes": "",
+      "status": "approved",
+      "registeredAt": "2026-07-01T00:00:00Z"
+    },
+    {
+      "id": "i-am-groot",
+      "name": "I Am Groot",
+      "captain": "Groot",
+      "captainEmail": "i@am.groot",
+      "captainPhone": "7471165007",
+      "club": "VCRC",
+      "members": 15,
+      "pledgePerKm": 500,
+      "boatM": 0,
+      "ergM": 0,
+      "notes": "I am Groot!",
+      "status": "pending",
+      "registeredAt": "2026-06-05T05:57:17.404Z"
     }
   ]
 }

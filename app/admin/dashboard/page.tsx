@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Trophy,
@@ -8,12 +8,13 @@ import {
   RefreshCw,
   Save,
   Key,
-  ChevronUp,
-  ChevronDown,
   Loader2,
   CheckCircle,
   AlertCircle,
-  Users,
+  ClipboardList,
+  Trash2,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -21,11 +22,16 @@ interface Team {
   id: string;
   name: string;
   captain: string;
+  captainEmail: string;
+  captainPhone: string;
   members: number;
-  boatKm: number;
-  ergKm: number;
+  boatM: number;
+  ergM: number;
   club: string;
   pledgePerKm: number;
+  notes: string;
+  status: "pending" | "approved";
+  registeredAt: string;
 }
 
 interface TeamsData {
@@ -35,7 +41,7 @@ interface TeamsData {
   teams: Team[];
 }
 
-type Tab = "teams" | "password";
+type Tab = "leaderboard" | "teams" | "password";
 
 function StatusBadge({ msg, type }: { msg: string; type: "ok" | "err" | null }) {
   if (!msg) return null;
@@ -58,15 +64,180 @@ function StatusBadge({ msg, type }: { msg: string; type: "ok" | "err" | null }) 
   );
 }
 
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required,
+  placeholder,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  required?: boolean;
+  placeholder?: string;
+  multiline?: boolean;
+}) {
+  const cls =
+    "w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-solstice-gold/50";
+  return (
+    <div>
+      <label className="block text-xs text-forest-300 mb-1">
+        {label}
+        {required && <span className="text-red-400 ml-0.5">*</span>}
+      </label>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={2}
+          className={`${cls} resize-none`}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={cls}
+        />
+      )}
+    </div>
+  );
+}
+
+function TeamEditCard({
+  team,
+  onChange,
+  onApprove,
+  onRevoke,
+  onDelete,
+}: {
+  team: Team;
+  onChange: (field: keyof Team, value: string | number) => void;
+  onApprove?: () => void;
+  onRevoke?: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="card-glass rounded-2xl p-5 space-y-4">
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className={clsx(
+              "text-xs px-2 py-0.5 rounded-full font-medium border",
+              team.status === "pending"
+                ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+                : "bg-green-500/20 text-green-300 border-green-500/30"
+            )}
+          >
+            {team.status === "pending" ? "Pending" : "Approved"}
+          </span>
+          <span className="text-forest-400 text-xs">
+            Registered {new Date(team.registeredAt).toLocaleDateString()}
+          </span>
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {onApprove && (
+            <button
+              onClick={onApprove}
+              className="flex items-center gap-1 px-3 py-1.5 bg-green-600/80 hover:bg-green-500/80 text-white text-xs rounded-lg transition-colors"
+            >
+              <Check className="w-3 h-3" />
+              Approve
+            </button>
+          )}
+          {onRevoke && (
+            <button
+              onClick={onRevoke}
+              className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-forest-200 text-xs rounded-lg transition-colors"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Unapprove
+            </button>
+          )}
+          <button
+            onClick={onDelete}
+            className="flex items-center gap-1 px-2 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 text-xs rounded-lg transition-colors"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Field
+          label="Team Name"
+          value={team.name}
+          onChange={(v) => onChange("name", v)}
+          required
+        />
+        <Field
+          label="Club / Organization"
+          value={team.club}
+          onChange={(v) => onChange("club", v)}
+        />
+        <Field
+          label="Captain Name"
+          value={team.captain}
+          onChange={(v) => onChange("captain", v)}
+          required
+        />
+        <Field
+          label="Captain Email"
+          value={team.captainEmail}
+          onChange={(v) => onChange("captainEmail", v)}
+          type="email"
+        />
+        <Field
+          label="Captain Phone"
+          value={team.captainPhone}
+          onChange={(v) => onChange("captainPhone", v)}
+          type="tel"
+        />
+        <Field
+          label="Number of Members"
+          value={String(team.members)}
+          onChange={(v) => onChange("members", parseInt(v) || 1)}
+          type="number"
+        />
+        <Field
+          label="Pledge Rate ($ / km)"
+          value={String(team.pledgePerKm)}
+          onChange={(v) => onChange("pledgePerKm", parseFloat(v) || 0)}
+          type="number"
+          placeholder="0.00"
+        />
+        <Field
+          label="Notes"
+          value={team.notes}
+          onChange={(v) => onChange("notes", v)}
+          placeholder="Any special notes…"
+          multiline
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("teams");
+  const [tab, setTab] = useState<Tab>("leaderboard");
   const [teamsData, setTeamsData] = useState<TeamsData | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ msg: string; type: "ok" | "err" | null }>({
     msg: "",
     type: null,
   });
+  const [addDelta, setAddDelta] = useState<Record<string, { boatM: string; ergM: string }>>({});
+  const [sortBy, setSortBy] = useState<"name" | "distance">("name");
+  const isDirtyRef = useRef(false);
+  const [isDirty, setIsDirtyState] = useState(false);
+  function setIsDirty(val: boolean) { isDirtyRef.current = val; setIsDirtyState(val); }
 
   const [pwForm, setPwForm] = useState({
     currentPassword: "",
@@ -74,16 +245,20 @@ export default function DashboardPage() {
     confirmPassword: "",
   });
   const [pwSaving, setPwSaving] = useState(false);
-  const [pwStatus, setPwStatus] = useState<{
-    msg: string;
-    type: "ok" | "err" | null;
-  }>({ msg: "", type: null });
+  const [pwStatus, setPwStatus] = useState<{ msg: string; type: "ok" | "err" | null }>({
+    msg: "",
+    type: null,
+  });
 
   const loadTeams = useCallback(async () => {
+    if (isDirtyRef.current) {
+      if (!confirm("You have unsaved changes. Reload and lose them?")) return;
+    }
     try {
       const res = await fetch("/api/content/teams");
       if (res.status === 401) { router.push("/admin/login"); return; }
       setTeamsData(await res.json());
+      setIsDirty(false);
     } catch {
       setStatus({ msg: "Failed to load teams data", type: "err" });
     }
@@ -91,7 +266,7 @@ export default function DashboardPage() {
 
   useEffect(() => { loadTeams(); }, [loadTeams]);
 
-  function updateKm(id: string, field: "boatKm" | "ergKm", raw: string) {
+  function updateMeters(id: string, field: "boatM" | "ergM", raw: string) {
     if (!teamsData) return;
     const val = parseFloat(raw) || 0;
     setTeamsData({
@@ -100,18 +275,85 @@ export default function DashboardPage() {
         t.id === id ? { ...t, [field]: Math.max(0, val) } : t
       ),
     });
+    setIsDirty(true);
   }
 
-  function nudgeKm(id: string, field: "boatKm" | "ergKm", delta: number) {
+  function addMeters(id: string, field: "boatM" | "ergM") {
+    if (!teamsData) return;
+    const delta = parseFloat(addDelta[id]?.[field] || "0") || 0;
+    if (!delta) return;
+    setTeamsData({
+      ...teamsData,
+      teams: teamsData.teams.map((t) =>
+        t.id === id ? { ...t, [field]: Math.max(0, t[field] + delta) } : t
+      ),
+    });
+    setAddDelta((prev) => ({ ...prev, [id]: { ...prev[id], [field]: "" } }));
+    setIsDirty(true);
+  }
+
+  function updateTeamField(id: string, field: keyof Team, value: string | number) {
     if (!teamsData) return;
     setTeamsData({
       ...teamsData,
       teams: teamsData.teams.map((t) =>
-        t.id === id
-          ? { ...t, [field]: Math.max(0, parseFloat((t[field] + delta).toFixed(2))) }
-          : t
+        t.id === id ? { ...t, [field]: value } : t
       ),
     });
+    setIsDirty(true);
+  }
+
+  async function approveTeam(id: string) {
+    if (!teamsData) return;
+    const updated: TeamsData = {
+      ...teamsData,
+      teams: teamsData.teams.map((t) =>
+        t.id === id ? { ...t, status: "approved" as const } : t
+      ),
+      lastUpdated: new Date().toISOString(),
+    };
+    setTeamsData(updated);
+    try {
+      const res = await fetch("/api/content/teams", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+      if (res.ok) { setIsDirty(false); }
+      else { setStatus({ msg: "Failed to save approval", type: "err" }); }
+    } catch {
+      setStatus({ msg: "Network error saving approval", type: "err" });
+    }
+  }
+
+  async function pendingTeam(id: string) {
+    if (!teamsData) return;
+    const updated: TeamsData = {
+      ...teamsData,
+      teams: teamsData.teams.map((t) =>
+        t.id === id ? { ...t, status: "pending" as const } : t
+      ),
+      lastUpdated: new Date().toISOString(),
+    };
+    setTeamsData(updated);
+    try {
+      const res = await fetch("/api/content/teams", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+      if (res.ok) { setIsDirty(false); }
+      else { setStatus({ msg: "Failed to save unapproval", type: "err" }); }
+    } catch {
+      setStatus({ msg: "Network error saving unapproval", type: "err" });
+    }
+  }
+
+  function deleteTeam(id: string) {
+    if (!teamsData) return;
+    if (!confirm("Delete this team? This cannot be undone.")) return;
+    setTeamsData({ ...teamsData, teams: teamsData.teams.filter((t) => t.id !== id) });
+    setIsDirty(true);
   }
 
   async function saveTeams() {
@@ -119,10 +361,7 @@ export default function DashboardPage() {
     setSaving(true);
     setStatus({ msg: "", type: null });
     try {
-      const payload = {
-        ...teamsData,
-        lastUpdated: new Date().toISOString(),
-      };
+      const payload = { ...teamsData, lastUpdated: new Date().toISOString() };
       const res = await fetch("/api/content/teams", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -130,7 +369,8 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         setTeamsData(payload);
-        setStatus({ msg: "Saved — leaderboard updated!", type: "ok" });
+        setIsDirty(false);
+        setStatus({ msg: "Saved successfully!", type: "ok" });
       } else {
         const d = await res.json();
         setStatus({ msg: d.error || "Save failed", type: "err" });
@@ -176,11 +416,39 @@ export default function DashboardPage() {
     setPwSaving(false);
   }
 
-  const sorted = teamsData
-    ? [...teamsData.teams].sort(
-        (a, b) => b.boatKm + b.ergKm - (a.boatKm + a.ergKm)
-      )
+  const approvedTeams = teamsData
+    ? [...teamsData.teams]
+        .filter((t) => t.status === "approved")
+        .sort((a, b) =>
+          sortBy === "distance"
+            ? b.boatM + b.ergM - (a.boatM + a.ergM)
+            : a.name.localeCompare(b.name)
+        )
     : [];
+  const pendingTeams = teamsData
+    ? teamsData.teams.filter((t) => t.status === "pending")
+    : [];
+
+  const SaveBtn = ({ label }: { label: string }) => isDirty ? (
+    <button
+      onClick={saveTeams}
+      disabled={saving}
+      className="flex items-center gap-1.5 px-4 py-2 bg-solstice-gold text-forest-950 rounded-lg text-sm font-bold hover:bg-solstice-gold-light disabled:opacity-50 transition-colors"
+    >
+      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+      {label}
+    </button>
+  ) : null;
+
+  const ReloadBtn = () => (
+    <button
+      onClick={loadTeams}
+      className="flex items-center gap-1.5 px-3 py-2 card-glass rounded-lg text-forest-200 text-sm hover:bg-white/10 transition-colors"
+    >
+      <RefreshCw className="w-4 h-4" />
+      Reload
+    </button>
+  );
 
   return (
     <div className="min-h-screen admin-bg">
@@ -214,10 +482,15 @@ export default function DashboardPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {/* Tabs */}
-        <div className="flex gap-2 mb-8">
+        <div className="flex gap-2 mb-8 flex-wrap">
           {(
             [
-              { id: "teams", label: "Team Leaderboard", icon: Users },
+              { id: "leaderboard", label: "Leaderboard", icon: Trophy },
+              {
+                id: "teams",
+                label: `Teams${pendingTeams.length ? ` (${pendingTeams.length})` : ""}`,
+                icon: ClipboardList,
+              },
               { id: "password", label: "Change Password", icon: Key },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
@@ -237,12 +510,12 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* ── Teams Tab ── */}
-        {tab === "teams" && (
+        {/* ── Leaderboard Tab ── */}
+        {tab === "leaderboard" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2 flex-wrap">
               <div>
-                <h2 className="text-white text-xl font-bold">Live Km Leaderboard</h2>
+                <h2 className="text-white text-xl font-bold">Live Leaderboard</h2>
                 {teamsData && (
                   <p className="text-forest-400 text-xs mt-0.5">
                     Last saved:{" "}
@@ -253,41 +526,53 @@ export default function DashboardPage() {
                   </p>
                 )}
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={loadTeams}
-                  className="flex items-center gap-1.5 px-3 py-2 card-glass rounded-lg text-forest-200 text-sm hover:bg-white/10 transition-colors"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Reload
-                </button>
-                <button
-                  onClick={saveTeams}
-                  disabled={saving}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-solstice-gold text-forest-950 rounded-lg text-sm font-bold hover:bg-solstice-gold-light disabled:opacity-50 transition-colors"
-                >
-                  {saving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  Save &amp; Publish
-                </button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-forest-400 text-xs">Sort:</span>
+                  <div className="flex bg-white/5 rounded-lg p-0.5 gap-0.5">
+                    {(["name", "distance"] as const).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSortBy(s)}
+                        className={clsx(
+                          "px-3 py-1 rounded text-xs font-medium transition-colors",
+                          sortBy === s
+                            ? "bg-white/15 text-white"
+                            : "text-forest-400 hover:text-forest-200"
+                        )}
+                      >
+                        {s === "name" ? "A\u2013Z" : "Distance"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <ReloadBtn />
+                  <SaveBtn label="Save &amp; Publish" />
+                </div>
               </div>
             </div>
 
-            {status.msg && (
-              <StatusBadge msg={status.msg} type={status.type} />
-            )}
+            {status.msg && <StatusBadge msg={status.msg} type={status.type} />}
 
             {!teamsData ? (
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="w-6 h-6 animate-spin text-forest-400" />
               </div>
+            ) : approvedTeams.length === 0 ? (
+              <div className="card-glass rounded-2xl p-12 text-center">
+                <p className="text-forest-300">
+                  No approved teams yet. Approve teams in the{" "}
+                  <button onClick={() => setTab("teams")} className="text-solstice-gold underline">
+                    Teams tab
+                  </button>
+                  .
+                </p>
+              </div>
             ) : (
               <div className="space-y-3">
-                {sorted.map((team, rank) => {
-                  const total = team.boatKm + team.ergKm;
+                {approvedTeams.map((team, rank) => {
+                  const total = team.boatM + team.ergM;
                   return (
                     <div key={team.id} className="card-glass rounded-2xl p-5">
                       <div className="flex items-start gap-4 mb-4">
@@ -295,9 +580,7 @@ export default function DashboardPage() {
                           {rank === 0 ? (
                             <Trophy className="w-4 h-4 text-solstice-gold" />
                           ) : (
-                            <span className="text-solstice-gold font-bold text-sm">
-                              {rank + 1}
-                            </span>
+                            <span className="text-solstice-gold font-bold text-sm">{rank + 1}</span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -306,12 +589,12 @@ export default function DashboardPage() {
                             <span className="text-forest-400 text-xs">{team.club}</span>
                           </div>
                           <p className="text-forest-300 text-sm">
-                            Captain: {team.captain} · {team.members} members
+                            {team.captain} · {team.members} members
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-solstice-gold font-bold text-lg">
-                            {total.toFixed(2)} km
+                            {total.toLocaleString()} m
                           </p>
                           <p className="text-forest-400 text-xs">total</p>
                         </div>
@@ -320,38 +603,41 @@ export default function DashboardPage() {
                       <div className="grid grid-cols-2 gap-4">
                         {(
                           [
-                            { field: "boatKm", label: "🚣 Boat (km)" },
-                            { field: "ergKm", label: "⚙️ Erg (km)" },
+                            { field: "boatM", label: "🚣 Boat (m)" },
+                            { field: "ergM", label: "⚙️ Erg (m)" },
                           ] as const
                         ).map(({ field, label }) => (
                           <div key={field}>
-                            <label className="block text-xs text-forest-300 mb-1">
-                              {label}
-                            </label>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => nudgeKm(team.id, field, -0.5)}
-                                className="p-1.5 rounded bg-white/10 hover:bg-white/20 text-white transition-colors"
-                                aria-label={`Decrease ${field}`}
-                              >
-                                <ChevronDown className="w-3.5 h-3.5" />
-                              </button>
+                            <label className="block text-xs text-forest-300 mb-1">{label}</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={team[field]}
+                              onChange={(e) => updateMeters(team.id, field, e.target.value)}
+                              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-solstice-gold/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <div className="flex gap-1.5 mt-1.5">
                               <input
                                 type="number"
                                 min="0"
-                                step="0.1"
-                                value={team[field]}
+                                step="1"
+                                placeholder="add meters…"
+                                value={addDelta[team.id]?.[field] ?? ""}
                                 onChange={(e) =>
-                                  updateKm(team.id, field, e.target.value)
+                                  setAddDelta((prev) => ({
+                                    ...prev,
+                                    [team.id]: { ...prev[team.id], [field]: e.target.value },
+                                  }))
                                 }
-                                className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:ring-1 focus:ring-solstice-gold/50"
+                                onKeyDown={(e) => { if (e.key === "Enter") addMeters(team.id, field); }}
+                                className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-white text-xs placeholder-white/25 focus:outline-none focus:ring-1 focus:ring-solstice-gold/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                               <button
-                                onClick={() => nudgeKm(team.id, field, 0.5)}
-                                className="p-1.5 rounded bg-white/10 hover:bg-white/20 text-white transition-colors"
-                                aria-label={`Increase ${field}`}
+                                onClick={() => addMeters(team.id, field)}
+                                className="px-2.5 py-1.5 bg-white/10 hover:bg-solstice-gold/20 hover:text-solstice-gold text-forest-200 text-xs rounded-lg transition-colors whitespace-nowrap font-medium"
                               >
-                                <ChevronUp className="w-3.5 h-3.5" />
+                                + Add
                               </button>
                             </div>
                           </div>
@@ -361,14 +647,12 @@ export default function DashboardPage() {
                       <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-forest-400">
                         <span>
                           Pledge rate:{" "}
-                          <span className="text-forest-200">
-                            ${team.pledgePerKm.toFixed(2)}/km
-                          </span>
+                          <span className="text-forest-200">${team.pledgePerKm.toFixed(2)}/km</span>
                         </span>
                         <span>
                           Est. raised:{" "}
                           <span className="text-solstice-gold font-medium">
-                            ${(total * team.pledgePerKm).toFixed(2)}
+                            ${((total / 1000) * team.pledgePerKm).toFixed(2)}
                           </span>
                         </span>
                       </div>
@@ -379,9 +663,85 @@ export default function DashboardPage() {
             )}
 
             <p className="text-forest-500 text-xs text-center">
-              Tip: Click &quot;Save &amp; Publish&quot; to update the live leaderboard on the
-              website. The page reloads automatically in the browser.
+              Edit values directly or type in &quot;+ Add&quot; to increment. Press Enter or click &quot;+ Add&quot; to apply.
             </p>
+          </div>
+        )}
+
+        {/* ── Teams Tab ── */}
+        {tab === "teams" && (
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-white text-xl font-bold">Team Registrations</h2>
+              <div className="flex gap-2">
+                <ReloadBtn />
+                <SaveBtn label="Save Changes" />
+              </div>
+            </div>
+
+            {status.msg && <StatusBadge msg={status.msg} type={status.type} />}
+
+            {!teamsData ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-forest-400" />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <h3 className="text-forest-300 text-sm font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+                    Pending Review
+                    {pendingTeams.length > 0 && (
+                      <span className="bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-xs px-2 py-0.5 rounded-full">
+                        {pendingTeams.length}
+                      </span>
+                    )}
+                  </h3>
+                  {pendingTeams.length === 0 ? (
+                    <div className="card-glass rounded-xl p-6 text-center">
+                      <p className="text-forest-400 text-sm">No pending registrations.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {pendingTeams.map((team) => (
+                        <TeamEditCard
+                          key={team.id}
+                          team={team}
+                          onChange={(field, value) => updateTeamField(team.id, field, value)}
+                          onApprove={() => approveTeam(team.id)}
+                          onDelete={() => deleteTeam(team.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-forest-300 text-sm font-semibold uppercase tracking-wide mb-3 flex items-center gap-2">
+                    Approved Teams
+                    <span className="bg-green-500/20 text-green-300 border border-green-500/30 text-xs px-2 py-0.5 rounded-full">
+                      {approvedTeams.length}
+                    </span>
+                  </h3>
+                  {approvedTeams.length === 0 ? (
+                    <div className="card-glass rounded-xl p-6 text-center">
+                      <p className="text-forest-400 text-sm">No approved teams yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {approvedTeams.map((team) => (
+                        <TeamEditCard
+                          key={team.id}
+                          team={team}
+                          onChange={(field, value) => updateTeamField(team.id, field, value)}
+                          onRevoke={() => pendingTeam(team.id)}
+                          onDelete={() => deleteTeam(team.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -392,42 +752,24 @@ export default function DashboardPage() {
             <form onSubmit={handleChangePassword} className="card-glass rounded-2xl p-6 space-y-4">
               {(
                 [
-                  {
-                    name: "currentPassword",
-                    label: "Current Password",
-                    placeholder: "Enter current password",
-                  },
-                  {
-                    name: "newPassword",
-                    label: "New Password",
-                    placeholder: "Min. 8 characters",
-                  },
-                  {
-                    name: "confirmPassword",
-                    label: "Confirm New Password",
-                    placeholder: "Repeat new password",
-                  },
+                  { name: "currentPassword", label: "Current Password", placeholder: "Enter current password" },
+                  { name: "newPassword", label: "New Password", placeholder: "Min. 8 characters" },
+                  { name: "confirmPassword", label: "Confirm New Password", placeholder: "Repeat new password" },
                 ] as const
               ).map(({ name, label, placeholder }) => (
                 <div key={name}>
-                  <label className="block text-sm font-medium text-forest-200 mb-1.5">
-                    {label}
-                  </label>
+                  <label className="block text-sm font-medium text-forest-200 mb-1.5">{label}</label>
                   <input
                     type="password"
                     value={pwForm[name]}
-                    onChange={(e) =>
-                      setPwForm({ ...pwForm, [name]: e.target.value })
-                    }
+                    onChange={(e) => setPwForm({ ...pwForm, [name]: e.target.value })}
                     placeholder={placeholder}
                     className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2.5 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-solstice-gold/50 focus:border-solstice-gold/50 transition-all"
                   />
                 </div>
               ))}
 
-              {pwStatus.msg && (
-                <StatusBadge msg={pwStatus.msg} type={pwStatus.type} />
-              )}
+              {pwStatus.msg && <StatusBadge msg={pwStatus.msg} type={pwStatus.type} />}
 
               <button
                 type="submit"

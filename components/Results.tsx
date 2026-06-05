@@ -5,8 +5,8 @@ interface Team {
   name: string;
   captain: string;
   members: number;
-  boatKm: number;
-  ergKm: number;
+  boatM: number;
+  ergM: number;
   club: string;
   pledgePerKm: number;
 }
@@ -30,7 +30,7 @@ const rankStyle = [
 
 export default function Results({ teamsData }: ResultsProps) {
   const sorted = [...teamsData.teams].sort(
-    (a, b) => b.boatKm + b.ergKm - (a.boatKm + a.ergKm)
+    (a, b) => b.boatM + b.ergM - (a.boatM + a.ergM)
   );
 
   const updated = new Date(teamsData.lastUpdated);
@@ -49,7 +49,7 @@ export default function Results({ teamsData }: ResultsProps) {
             Live Leaderboard
           </span>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mt-3 mb-2">
-            Team Km Totals
+            Team Meter Totals
           </h2>
           <div className="flex items-center justify-center gap-1.5 text-forest-400 text-sm">
             <Clock className="w-4 h-4" />
@@ -59,8 +59,8 @@ export default function Results({ teamsData }: ResultsProps) {
 
         <div className="space-y-3 mb-10">
           {sorted.map((team, rank) => {
-            const total = team.boatKm + team.ergKm;
-            const estRaised = (total * team.pledgePerKm).toFixed(2);
+            const total = team.boatM + team.ergM;
+            const estRaised = ((total / 1000) * team.pledgePerKm).toFixed(2);
             const style = rankStyle[rank] ?? "bg-white/5 border-white/10 text-forest-300";
             return (
               <div
@@ -89,8 +89,8 @@ export default function Results({ teamsData }: ResultsProps) {
 
                   <div className="flex-shrink-0 text-right">
                     <p className="text-solstice-gold font-bold text-2xl leading-none">
-                      {total.toFixed(2)}
-                      <span className="text-base font-normal ml-1">km</span>
+                      {total.toLocaleString()}
+                      <span className="text-base font-normal ml-1">m</span>
                     </p>
                     <p className="text-forest-400 text-xs mt-0.5">total</p>
                   </div>
@@ -101,14 +101,14 @@ export default function Results({ teamsData }: ResultsProps) {
                     <Waves className="w-4 h-4 text-water-light flex-shrink-0" />
                     <span className="text-forest-300">Boat:</span>
                     <span className="text-white font-medium">
-                      {team.boatKm.toFixed(2)} km
+                      {team.boatM.toLocaleString()} m
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Dumbbell className="w-4 h-4 text-forest-400 flex-shrink-0" />
                     <span className="text-forest-300">Erg:</span>
                     <span className="text-white font-medium">
-                      {team.ergKm.toFixed(2)} km
+                      {team.ergM.toLocaleString()} m
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm ml-auto">
