@@ -67,13 +67,13 @@ The password is stored in the `solstice_data` Docker volume and **survives resta
 docker compose down
 ```
 
-> **Data safety:** `docker compose down` stops the container but keeps the `solstice_data` volume (credentials + content edits). Use `docker compose down -v` only if you want to wipe all data and regenerate the password.
+> **Data safety:** `docker compose down` stops the container but keeps the `solstice_data` volume (credentials + team registrations). Use `docker compose down -v` **only if you want to wipe all data** — this destroys all registrations and regenerates the admin password.
 
 ---
 
 ## Content Management
 
-All site content is stored as JSON files in `content/`. The admin panel provides a browser UI to edit them; you can also edit the files directly.
+Event details, schedule, and sponsor data are stored as JSON files in `content/`. Team registrations are stored separately in the persistent `solstice_data` Docker volume at `/data/teams.json` (see [Data Persistence](#data-persistence) below). The admin panel provides a browser UI to edit all of these.
 
 ### Via the Admin Panel
 
@@ -88,7 +88,7 @@ All site content is stored as JSON files in `content/`. The admin panel provides
 |------|-----------------|
 | `content/event.json` | Event name, date, venue, registration URL, donation URL, contact email, cause description, event format |
 | `content/schedule.json` | Day-of schedule items (time, title, description, category) |
-| `content/teams.json` | Team entries — name, captain, club, members, boat km, erg km, pledge per km |
+| `content/teams.json` | Seed data only — copied into `/data/teams.json` on first run; live data lives in the Docker volume |
 | `content/sponsors.json` | Sponsor tiers (Gold / Silver / Bronze) with name, URL, and optional logo path |
 
 #### Updating the Team Leaderboard (event day)
@@ -144,7 +144,8 @@ Edit `content/event.json`. Key fields:
 │   │   └── page.tsx            # Redirects → /admin/dashboard
 │   ├── api/
 │   │   ├── auth/               # login / logout / change-password
-│   │   └── content/[type]/     # GET + PUT for content JSON files
+│   │   ├── content/[type]/     # GET + PUT for content JSON files
+│   │   └── registrations/      # POST — public team registration endpoint
 │   ├── globals.css             # CSS variables + utility classes (no hardcoded colours)
 │   ├── layout.tsx
 │   └── page.tsx                # Public home page
@@ -163,14 +164,15 @@ Edit `content/event.json`. Key fields:
 │   ├── teams.json
 │   └── sponsors.json
 ├── lib/
-│   └── auth.ts                 # Password hashing, token creation, credential I/O
+│   ├── auth.ts                 # Password hashing, token creation, credential I/O
+│   └── teams-file.ts           # Resolves teams.json path (volume in prod, content/ fallback)
 ├── proxy.ts                    # Auth guard for /admin/* and /api/content/* (Next.js 16 proxy convention)
 ├── nginx/
 │   ├── docker-entrypoint.sh    # Detects certs, selects http-only or https config
 │   ├── http-only.conf          # nginx config — HTTP proxy to web:3000
 │   └── https.conf              # nginx config — TLS termination + HTTP→HTTPS redirect
 ├── scripts/
-│   ├── init.sh                 # First-run password generation
+│   ├── init.sh                 # First-run: seeds /data/teams.json + generates admin password
 │   ├── issue-solsticerow.sh    # Let's Encrypt cert issuance (run from ~/certbot)
 │   └── renew-solsticerow.sh    # Let's Encrypt cert renewal  (run from ~/certbot)
 ├── tailwind.config.ts          # Colour theme (forest green + gold)
@@ -266,6 +268,31 @@ BUILD_STATIC=true npm run build
 ```
 
 Deploy the `out/` directory to Netlify. Set `BUILD_STATIC=true` in the Netlify build environment. The admin panel is **not available** in static mode.
+
+---
+
+## Data Persistence
+
+All mutable runtime data lives in the `solstice_data` named Docker volume, mounted at `/data` inside the container. The source code image is stateless — rebuilding it never destroys live data.
+
+| Path in volume | Contents |
+|---|---|
+| `/data/teams.json` | All team registrations (live data) |
+| `/data/auth/credentials.json` | Admin username + hashed password |
+
+**On first container start**, `init.sh` copies `content/teams.json` from the image into the volume as seed data (only if `/data/teams.json` doesn't already exist).
+
+### Backup
+
+```bash
+docker compose exec web cat /data/teams.json > teams-backup-$(date +%Y%m%d).json
+```
+
+### Restore
+
+```bash
+docker cp teams-backup-20260721.json $(docker compose ps -q web):/data/teams.json
+```
 
 ---
 

@@ -23,8 +23,10 @@ docker compose -f docker-compose.dev.yml run --rm web npm <command>
 Always run a production build to confirm no TypeScript or compilation errors before finishing a task:
 
 ```bash
-docker run --rm -v "$(pwd)":/app -w /app node:lts-alpine sh -c "rm -rf .next && npm install && npm run build"
+docker run --rm -v "$(pwd)":/app -w /app node:lts-alpine sh -c "npm install && npm run build"
 ```
+
+> Note: `rm -rf .next` will fail if `.next` was built by Docker (root-owned). Omit it — Next.js will overwrite it.
 
 A passing build prints `✓ Compiled successfully` with no `Type error:` lines.
 
@@ -42,6 +44,7 @@ Runs `next start` (compiled build). Rebuild the image after any code change — 
 - **`params` in route handlers** — always `Promise<{ ... }>`, must be `await`ed (Next.js 15+ breaking change).
 - **`cookies()`** — always `await cookies()` in server components and route handlers.
 - **Tailwind** — v4; config in `tailwind.config.ts` referenced via `@config` in `app/globals.css`. PostCSS plugin is `@tailwindcss/postcss`, not `tailwindcss`.
-- **Content files** — `content/*.json` are runtime data. Edit via admin panel at `/admin` or directly in the files.
+- **Content files** — `content/*.json` are runtime data for event, schedule, and sponsors. Edit via admin panel at `/admin` or directly in the files.
+- **`teams.json` persistence** — in production and dev, `teams.json` lives in the `solstice_data` Docker volume at `/data/teams.json`, **not** inside the image. `init.sh` seeds it from `content/teams.json` on first run. Rebuilding the image never destroys registration data. All reads/writes go through `lib/teams-file.ts` — do not hardcode the path in route handlers.
 - **Colours** — never hardcode hex values; use theme tokens from `tailwind.config.ts` (e.g. `forest-900`, `solstice-gold`).
 - **`next dev` hostname** — the dev script already passes `-H 0.0.0.0`; do not remove this or the server won't be reachable from the host.

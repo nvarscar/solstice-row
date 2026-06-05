@@ -6,6 +6,15 @@
 DATA_DIR="${DATA_DIR:-/data}"
 CREDS_FILE="$DATA_DIR/auth/credentials.json"
 
+TEAMS_FILE="$DATA_DIR/teams.json"
+SOURCE_TEAMS="/app/content/teams.json"
+
+if [ ! -f "$TEAMS_FILE" ] && [ -f "$SOURCE_TEAMS" ]; then
+    mkdir -p "$DATA_DIR"
+    cp "$SOURCE_TEAMS" "$TEAMS_FILE"
+    echo "[solstice-row] Teams data seeded into persistent storage."
+fi
+
 if [ ! -f "$CREDS_FILE" ]; then
     mkdir -p "$DATA_DIR/auth"
 

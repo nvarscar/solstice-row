@@ -3,8 +3,14 @@ import { cookies } from "next/headers";
 import fs from "fs";
 import path from "path";
 import { getCredentials, verifyToken } from "@/lib/auth";
+import { teamsFilePath } from "@/lib/teams-file";
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
+
+function contentFilePath(type: string): string {
+  if (type === "teams") return teamsFilePath();
+  return path.join(CONTENT_DIR, `${type}.json`);
+}
 const ALLOWED = ["event", "schedule", "teams", "sponsors"];
 
 async function isAuthenticated(): Promise<boolean> {
@@ -26,7 +32,7 @@ export async function GET(
   }
   try {
     const data = JSON.parse(
-      fs.readFileSync(path.join(CONTENT_DIR, `${type}.json`), "utf-8")
+      fs.readFileSync(contentFilePath(type), "utf-8")
     );
     return NextResponse.json(data);
   } catch {
@@ -48,7 +54,7 @@ export async function PUT(
   try {
     const body = await request.json();
     fs.writeFileSync(
-      path.join(CONTENT_DIR, `${type}.json`),
+      contentFilePath(type),
       JSON.stringify(body, null, 2)
     );
     return NextResponse.json({ success: true });

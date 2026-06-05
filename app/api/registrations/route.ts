@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
-import path from "path";
-
-const TEAMS_FILE = path.join(process.cwd(), "content", "teams.json");
+import { teamsFilePath } from "@/lib/teams-file";
 
 function slugify(name: string): string {
   return name
@@ -24,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = JSON.parse(fs.readFileSync(TEAMS_FILE, "utf-8"));
+    const data = JSON.parse(fs.readFileSync(teamsFilePath(), "utf-8"));
 
     const baseId = slugify(String(name));
     let id = baseId;
@@ -50,7 +48,7 @@ export async function POST(request: NextRequest) {
     };
 
     data.teams.push(newTeam);
-    fs.writeFileSync(TEAMS_FILE, JSON.stringify(data, null, 2));
+    fs.writeFileSync(teamsFilePath(), JSON.stringify(data, null, 2));
 
     return NextResponse.json({ success: true, id });
   } catch (err) {
