@@ -12,19 +12,19 @@ interface ScheduleProps {
 }
 
 const categoryColors: Record<string, string> = {
-  row: "bg-water-light/20 text-water-light border-water-light/30",
-  race: "bg-solstice-gold/20 text-solstice-gold border-solstice-gold/30",
-  logistics: "bg-blue-400/20 text-blue-300 border-blue-400/30",
-  ceremony: "bg-purple-400/20 text-purple-300 border-purple-400/30",
-  social: "bg-emerald-400/20 text-emerald-300 border-emerald-400/30",
+  row:       "bg-water-light/20 text-water-light border-water-light/30",
+  milestone: "bg-solstice-orange/20 text-solstice-orange border-solstice-orange/30",
+  logistics: "bg-forest-400/20 text-forest-300 border-forest-400/30",
+  social:    "bg-solstice-amber/20 text-solstice-amber border-solstice-amber/30",
+  race:      "bg-solstice-gold/20 text-solstice-gold border-solstice-gold/30",
 };
 
 const categoryDots: Record<string, string> = {
-  row: "bg-water-light",
-  race: "bg-solstice-gold",
-  logistics: "bg-blue-400",
-  ceremony: "bg-purple-400",
-  social: "bg-emerald-400",
+  row:       "bg-water-light",
+  milestone: "bg-solstice-orange",
+  logistics: "bg-forest-400",
+  social:    "bg-solstice-amber",
+  race:      "bg-solstice-gold",
 };
 
 export default function Schedule({ items }: ScheduleProps) {
@@ -50,7 +50,7 @@ export default function Schedule({ items }: ScheduleProps) {
                 className="relative flex gap-4 sm:gap-6 group"
               >
                 <div className="flex-shrink-0 w-20 sm:w-24 text-right pt-6">
-                  <span className="text-xs sm:text-sm text-blue-300 font-mono">
+                  <span className="text-xs sm:text-sm text-forest-300 font-mono">
                     {item.time}
                   </span>
                 </div>
@@ -58,7 +58,7 @@ export default function Schedule({ items }: ScheduleProps) {
                 <div className="relative flex-shrink-0 pt-6">
                   <div
                     className={clsx(
-                      "w-3 h-3 rounded-full mt-0.5 ring-2 ring-navy-900 transition-transform group-hover:scale-125",
+                      "w-3 h-3 rounded-full mt-0.5 ring-2 ring-forest-950 transition-transform group-hover:scale-125",
                       categoryDots[item.category] ?? "bg-white/50"
                     )}
                   />
@@ -78,7 +78,7 @@ export default function Schedule({ items }: ScheduleProps) {
                         {item.category}
                       </span>
                     </div>
-                    <p className="text-blue-200 text-sm leading-relaxed">
+                    <p className="text-forest-200 text-sm leading-relaxed">
                       {item.description}
                     </p>
                   </div>

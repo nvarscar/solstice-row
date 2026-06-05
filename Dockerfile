@@ -8,6 +8,8 @@ RUN npm install
 
 COPY . .
 
+RUN chmod +x /app/scripts/init.sh
+
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["sh", "/app/scripts/init.sh"]

@@ -30,7 +30,7 @@ export default function Nav({ registrationUrl, registrationOpen }: NavProps) {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-navy-900/95 backdrop-blur-md shadow-lg shadow-black/30"
+          ? "bg-forest-950/95 backdrop-blur-md shadow-lg shadow-black/30"
           : "bg-transparent"
       }`}
     >
@@ -47,7 +47,7 @@ export default function Nav({ registrationUrl, registrationOpen }: NavProps) {
             <li key={l.href}>
               <a
                 href={l.href}
-                className="text-sm text-blue-200 hover:text-white transition-colors duration-200"
+                className="text-sm text-forest-200 hover:text-white transition-colors duration-200"
               >
                 {l.label}
               </a>
@@ -61,7 +61,7 @@ export default function Nav({ registrationUrl, registrationOpen }: NavProps) {
               href={registrationUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 bg-solstice-gold text-navy-900 text-sm font-semibold rounded-lg hover:bg-solstice-dawn transition-colors"
+              className="px-4 py-2 bg-solstice-gold text-forest-950 text-sm font-semibold rounded-lg hover:bg-solstice-gold-light transition-colors"
             >
               Register Now
             </a>
@@ -82,14 +82,14 @@ export default function Nav({ registrationUrl, registrationOpen }: NavProps) {
       </nav>
 
       {open && (
-        <div className="md:hidden bg-navy-900/98 backdrop-blur-md border-t border-white/10">
+        <div className="md:hidden bg-forest-950/98 backdrop-blur-md border-t border-white/10">
           <ul className="px-4 py-4 space-y-3">
             {links.map((l) => (
               <li key={l.href}>
                 <a
                   href={l.href}
                   onClick={() => setOpen(false)}
-                  className="block text-blue-200 hover:text-white py-1 transition-colors"
+                  className="block text-forest-200 hover:text-white py-1 transition-colors"
                 >
                   {l.label}
                 </a>
@@ -101,7 +101,7 @@ export default function Nav({ registrationUrl, registrationOpen }: NavProps) {
                   href={registrationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-full text-center px-4 py-2 bg-solstice-gold text-navy-900 font-semibold rounded-lg mt-2"
+                  className="block w-full text-center px-4 py-2 bg-solstice-gold text-forest-950 font-semibold rounded-lg mt-2"
                 >
                   Register Now
                 </a>

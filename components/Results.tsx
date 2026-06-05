@@ -1,148 +1,138 @@
-"use client";
+import { Trophy, Waves, Dumbbell, Clock } from "lucide-react";
 
-import { useState } from "react";
-import { Trophy, Medal, Award } from "lucide-react";
-import clsx from "clsx";
-
-interface ResultEntry {
-  place: number;
+interface Team {
+  id: string;
   name: string;
+  captain: string;
+  members: number;
+  boatKm: number;
+  ergKm: number;
   club: string;
-  time: string;
+  pledgePerKm: number;
 }
 
-interface ResultCategory {
-  name: string;
-  entries: ResultEntry[];
-}
-
-interface YearResults {
-  year: string;
-  categories: ResultCategory[];
+interface TeamsData {
+  eventYear: string;
+  eventDate: string;
+  lastUpdated: string;
+  teams: Team[];
 }
 
 interface ResultsProps {
-  years: YearResults[];
+  teamsData: TeamsData;
 }
 
-const placeIcons = [Trophy, Medal, Award];
-const placeColors = [
-  "text-solstice-gold",
-  "text-slate-300",
-  "text-amber-600",
+const rankStyle = [
+  "bg-solstice-gold/20 border-solstice-gold/50 text-solstice-gold",
+  "bg-white/10 border-white/20 text-slate-300",
+  "bg-solstice-orange/10 border-solstice-orange/30 text-solstice-orange",
 ];
 
-export default function Results({ years }: ResultsProps) {
-  const [activeYear, setActiveYear] = useState(years[0]?.year ?? "");
-  const [activeCategory, setActiveCategory] = useState(0);
+export default function Results({ teamsData }: ResultsProps) {
+  const sorted = [...teamsData.teams].sort(
+    (a, b) => b.boatKm + b.ergKm - (a.boatKm + a.ergKm)
+  );
 
-  const year = years.find((y) => y.year === activeYear);
-
-  if (!year) return null;
+  const updated = new Date(teamsData.lastUpdated);
+  const updatedStr = updated.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
     <section id="results" className="py-24 px-4 sm:px-6 relative">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <span className="text-solstice-gold text-sm font-semibold uppercase tracking-widest">
-            Leaderboard
+            Live Leaderboard
           </span>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mt-3">
-            Race Results
+          <h2 className="text-4xl sm:text-5xl font-bold text-white mt-3 mb-2">
+            Team Km Totals
           </h2>
+          <div className="flex items-center justify-center gap-1.5 text-forest-400 text-sm">
+            <Clock className="w-4 h-4" />
+            <span>Updated {updatedStr}</span>
+          </div>
         </div>
 
-        {years.length > 1 && (
-          <div className="flex justify-center gap-2 mb-8">
-            {years.map((y) => (
-              <button
-                key={y.year}
-                onClick={() => {
-                  setActiveYear(y.year);
-                  setActiveCategory(0);
-                }}
-                className={clsx(
-                  "px-4 py-1.5 rounded-full text-sm font-medium transition-colors",
-                  activeYear === y.year
-                    ? "bg-solstice-gold text-navy-900"
-                    : "bg-white/10 text-blue-200 hover:bg-white/20"
-                )}
+        <div className="space-y-3 mb-10">
+          {sorted.map((team, rank) => {
+            const total = team.boatKm + team.ergKm;
+            const estRaised = (total * team.pledgePerKm).toFixed(2);
+            const style = rankStyle[rank] ?? "bg-white/5 border-white/10 text-forest-300";
+            return (
+              <div
+                key={team.id}
+                className="card-glass rounded-2xl overflow-hidden hover:bg-white/8 transition-colors"
               >
-                {y.year}
-              </button>
-            ))}
-          </div>
-        )}
+                <div className="flex items-center gap-4 p-5">
+                  <div
+                    className={`flex-shrink-0 w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm ${style}`}
+                  >
+                    {rank === 0 ? <Trophy className="w-4 h-4" /> : rank + 1}
+                  </div>
 
-        <div className="flex flex-wrap gap-2 justify-center mb-8">
-          {year.categories.map((cat, i) => (
-            <button
-              key={cat.name}
-              onClick={() => setActiveCategory(i)}
-              className={clsx(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                activeCategory === i
-                  ? "bg-water-deep text-white border border-water-light/40"
-                  : "card-glass text-blue-200 hover:bg-white/10"
-              )}
-            >
-              {cat.name}
-            </button>
-          ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <h3 className="text-white font-bold text-base leading-tight">
+                        {team.name}
+                      </h3>
+                      <span className="text-forest-400 text-xs">{team.club}</span>
+                    </div>
+                    <p className="text-forest-300 text-sm mt-0.5">
+                      {team.captain} · {team.members}{" "}
+                      {team.members === 1 ? "member" : "members"}
+                    </p>
+                  </div>
+
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-solstice-gold font-bold text-2xl leading-none">
+                      {total.toFixed(2)}
+                      <span className="text-base font-normal ml-1">km</span>
+                    </p>
+                    <p className="text-forest-400 text-xs mt-0.5">total</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-white/5 px-5 py-3 flex flex-wrap gap-6">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Waves className="w-4 h-4 text-water-light flex-shrink-0" />
+                    <span className="text-forest-300">Boat:</span>
+                    <span className="text-white font-medium">
+                      {team.boatKm.toFixed(2)} km
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Dumbbell className="w-4 h-4 text-forest-400 flex-shrink-0" />
+                    <span className="text-forest-300">Erg:</span>
+                    <span className="text-white font-medium">
+                      {team.ergKm.toFixed(2)} km
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm ml-auto">
+                    <span className="text-forest-400">Est. raised:</span>
+                    <span className="text-solstice-gold font-semibold">
+                      ${estRaised}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {year.categories[activeCategory] && (
-          <div className="card-glass rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-white/10">
-              <h3 className="text-white font-semibold">
-                {year.categories[activeCategory].name}
-              </h3>
-              <p className="text-blue-300 text-sm">{activeYear} Season</p>
-            </div>
-            <div className="divide-y divide-white/5">
-              {year.categories[activeCategory].entries.map((entry) => {
-                const place = entry.place;
-                const Icon = place <= 3 ? placeIcons[place - 1] : null;
-                return (
-                  <div
-                    key={entry.place}
-                    className="flex items-center gap-4 px-6 py-4 hover:bg-white/5 transition-colors"
-                  >
-                    <div className="w-8 flex-shrink-0 flex items-center justify-center">
-                      {Icon ? (
-                        <Icon
-                          className={clsx(
-                            "w-5 h-5",
-                            placeColors[place - 1]
-                          )}
-                        />
-                      ) : (
-                        <span className="text-blue-400 text-sm font-mono w-5 text-center">
-                          {place}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium truncate">
-                        {entry.name}
-                      </p>
-                      <p className="text-blue-300 text-sm truncate">
-                        {entry.club}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <span className="text-solstice-gold font-mono font-semibold">
-                        {entry.time}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        {sorted.length === 0 && (
+          <div className="card-glass rounded-2xl p-12 text-center">
+            <p className="text-forest-300">
+              The leaderboard will go live when the event begins on{" "}
+              {teamsData.eventDate}.
+            </p>
           </div>
         )}
 
-        <div className="mt-12 water-divider" />
+        <div className="mt-8 water-divider" />
       </div>
     </section>
   );

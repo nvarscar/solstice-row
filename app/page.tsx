@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 
 import eventData from "@/content/event.json";
 import scheduleData from "@/content/schedule.json";
-import resultsData from "@/content/results.json";
+import teamsData from "@/content/teams.json";
 import sponsorsData from "@/content/sponsors.json";
 
 export default function Home() {
@@ -26,30 +26,34 @@ export default function Home() {
         heroSubtitle={eventData.heroSubtitle}
         date={eventData.date}
         location={eventData.location}
-        startTime={eventData.startTime}
+        venue={eventData.venue}
+        sunriseTime={eventData.sunriseTime}
+        sunsetTime={eventData.sunsetTime}
         edition={eventData.edition}
         registrationUrl={eventData.registrationUrl}
         registrationOpen={eventData.registrationOpen}
         registrationDeadline={eventData.registrationDeadline}
+        donationUrl={eventData.donationUrl}
       />
 
       <About
         description={eventData.description}
-        location={eventData.location}
-        date={eventData.date}
+        cause={eventData.cause}
+        format={eventData.format}
       />
 
       <Schedule items={scheduleData.items} />
 
-      <Results years={resultsData.years} />
+      <Results teamsData={teamsData} />
 
       <Sponsors tiers={sponsorsData.tiers} />
 
       <Contact
         contactEmail={eventData.contactEmail}
-        contactPhone={eventData.contactPhone}
         location={eventData.location}
+        address={eventData.address}
         registrationUrl={eventData.registrationUrl}
+        donationUrl={eventData.donationUrl}
         registrationOpen={eventData.registrationOpen}
       />
 

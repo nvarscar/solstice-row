@@ -32,7 +32,7 @@ export default function Sponsors({ tiers }: SponsorsProps) {
           <h2 className="text-4xl sm:text-5xl font-bold text-white mt-3 mb-4">
             Our Sponsors
           </h2>
-          <p className="text-blue-200 max-w-xl mx-auto">
+          <p className="text-forest-200 max-w-xl mx-auto">
             Solstice Row is made possible by the generous support of these
             organizations.
           </p>
@@ -45,7 +45,7 @@ export default function Sponsors({ tiers }: SponsorsProps) {
                 <span
                   className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
                     tierStyles[tier.name] ??
-                    "text-blue-300 border-blue-400/30 bg-blue-400/10"
+                    "text-forest-300 border-forest-400/30 bg-forest-400/10"
                   }`}
                 >
                   {tier.name}
@@ -82,7 +82,7 @@ export default function Sponsors({ tiers }: SponsorsProps) {
         </div>
 
         <div className="mt-16 text-center">
-          <p className="text-blue-300 text-sm mb-4">
+          <p className="text-forest-300 text-sm mb-4">
             Interested in sponsoring Solstice Row?
           </p>
           <a

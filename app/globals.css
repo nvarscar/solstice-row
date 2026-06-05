@@ -4,10 +4,25 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/*
+  CSS custom properties — space-separated RGB channels so they can be
+  used with the modern  rgb(R G B / alpha)  syntax. All values are
+  derived from tailwind.config.ts; change them there, then mirror here.
+*/
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 10, 22, 40;
-  --background-end-rgb: 12, 74, 110;
+  /* Forest green palette */
+  --forest-950: 7 20 7;
+  --forest-900: 13 43 13;
+  --forest-800: 26 74 26;
+  --forest-400: 92 196 92;
+
+  /* Solstice gold palette */
+  --solstice-gold: 232 184 0;
+  --solstice-gold-light: 245 197 24;
+  --solstice-gold-glow: 255 241 118;
+
+  /* Water palette */
+  --water-light: 74 222 128;
 }
 
 * {
@@ -21,11 +36,11 @@ html {
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
+  color: rgb(255 255 255);
   background: linear-gradient(
     to bottom,
-    rgb(var(--background-start-rgb)),
-    rgb(var(--background-end-rgb))
+    rgb(var(--forest-950)),
+    rgb(var(--forest-900))
   );
   font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
@@ -35,21 +50,21 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-  
+
   .animate-fade-up {
     animation: fadeUp 0.7s ease-out forwards;
   }
-  
+
   .animation-delay-200 {
     animation-delay: 200ms;
     opacity: 0;
   }
-  
+
   .animation-delay-400 {
     animation-delay: 400ms;
     opacity: 0;
   }
-  
+
   .animation-delay-600 {
     animation-delay: 600ms;
     opacity: 0;
@@ -68,17 +83,19 @@ body {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
+  0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
+/* Gold shimmer text effect — uses --solstice-gold* variables */
 .gold-shimmer {
   background: linear-gradient(
     90deg,
-    #f59e0b 0%,
-    #fde68a 40%,
-    #f59e0b 60%,
-    #d97706 100%
+    rgb(var(--solstice-gold))       0%,
+    rgb(var(--solstice-gold-light)) 35%,
+    rgb(var(--solstice-gold-glow))  50%,
+    rgb(var(--solstice-gold-light)) 65%,
+    rgb(var(--solstice-gold))       100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -87,18 +104,54 @@ body {
   animation: shimmer 3s linear infinite;
 }
 
+/* Thin horizontal divider tinted with water-light */
 .water-divider {
-  background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--water-light)),
+    transparent
+  );
   height: 1px;
 }
 
+/* Frosted dark panel */
 .section-dark {
-  background: rgba(10, 22, 40, 0.85);
+  background: rgb(var(--forest-950) / 0.85);
   backdrop-filter: blur(8px);
 }
 
+/* Frosted glass card — white-tinted regardless of theme */
 .card-glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / 0.05);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+/* Hero section radial + linear gradient */
+.hero-bg {
+  background:
+    radial-gradient(ellipse at 50% 20%, rgb(var(--solstice-gold) / 0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 90%, rgb(var(--forest-800) / 0.10) 0%, transparent 50%),
+    linear-gradient(
+      to bottom,
+      rgb(var(--forest-950))  0%,
+      rgb(var(--forest-900))  40%,
+      rgb(var(--forest-800))  75%,
+      rgb(var(--forest-900))  100%
+    );
+}
+
+/* Admin / utility pages dark gradient */
+.admin-bg {
+  background: linear-gradient(to bottom, rgb(var(--forest-950)), rgb(var(--forest-900)));
+}
+
+/* Hero SVG wave fills */
+.hero-wave-upper {
+  fill: rgb(var(--forest-800) / 0.4);
+}
+
+.hero-wave-lower {
+  fill: rgb(var(--forest-900) / 0.6);
 }

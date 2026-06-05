@@ -1,57 +1,63 @@
 {
   "items": [
     {
-      "time": "5:00 AM",
-      "title": "Dawn Row — Open Water",
-      "description": "Optional early-morning row to greet the solstice sunrise. All experience levels welcome.",
-      "category": "row"
+      "time": "5:17 AM",
+      "title": "Sunrise — Challenge Begins",
+      "description": "First team on the water at sunrise. The clock starts — every kilometer counts toward your pledge total!",
+      "category": "milestone"
     },
     {
-      "time": "7:00 AM",
-      "title": "Registration & Check-in Opens",
-      "description": "Pick up your race packet, number, and timing chip at the main tent.",
+      "time": "5:00 AM",
+      "title": "Check-in & Boat Rigging",
+      "description": "Arrive early to check in, rig your boat, and get your team log sheet. Safety briefing at the dock.",
       "category": "logistics"
     },
     {
-      "time": "8:30 AM",
-      "title": "Welcome Ceremony",
-      "description": "Opening remarks from event organizers and safety briefing.",
-      "category": "ceremony"
+      "time": "6:00 AM",
+      "title": "Morning Rows Underway",
+      "description": "Teams rotate on boats and ergs using the whole-lake flow pattern. Hand-tag all rower transitions.",
+      "category": "row"
     },
     {
       "time": "9:00 AM",
-      "title": "Single Scull — 5K Race",
-      "description": "Individual sculling event. Course marked with buoys on the lake.",
-      "category": "race"
-    },
-    {
-      "time": "10:30 AM",
-      "title": "Double Scull & Pair — 5K Race",
-      "description": "Two-person boat categories. Heats assigned at check-in.",
-      "category": "race"
+      "title": "Hourly Raffle Draw",
+      "description": "First hourly raffle draw at the tarmac. Tickets available at the concession tent all day.",
+      "category": "social"
     },
     {
       "time": "12:00 PM",
-      "title": "Lunch & Open Paddle",
-      "description": "Community lunch provided. Open-water recreational row open to all.",
+      "title": "Midday BBQ & 50/50 Draw",
+      "description": "Grab lunch from the BBQ. 50/50 draw announced at noon. Keep the kilometers rolling!",
       "category": "social"
     },
     {
       "time": "2:00 PM",
-      "title": "Four & Eight — 5K Race",
-      "description": "Coxed and coxless four, plus eight-person shells compete.",
-      "category": "race"
+      "title": "Afternoon Push",
+      "description": "Halfway through sunset — teams dig deep. Music and community cheer keep the energy high.",
+      "category": "row"
     },
     {
-      "time": "4:30 PM",
-      "title": "Awards Ceremony",
-      "description": "Medal and trophy presentation for all race categories.",
-      "category": "ceremony"
+      "time": "5:00 PM",
+      "title": "Final Stretch Begins",
+      "description": "Four hours to sunset. Final push for teams chasing Most Kilometers and Most Money Raised prizes.",
+      "category": "milestone"
     },
     {
-      "time": "5:30 PM",
-      "title": "Solstice Sunset Social",
-      "description": "Celebrate the longest day with fellow rowers. Food, music, and community.",
+      "time": "8:00 PM",
+      "title": "Last Laps on the Lake",
+      "description": "Golden hour on Elk Lake. Final erging and rowing to maximize your team's total distance.",
+      "category": "row"
+    },
+    {
+      "time": "9:23 PM",
+      "title": "Sunset — Challenge Complete!",
+      "description": "Oars down at sunset. Official km totals recorded. Prizes awarded for Best Team Name, Most Kilometers, and Most Money Raised.",
+      "category": "milestone"
+    },
+    {
+      "time": "9:30 PM",
+      "title": "Prizes & Celebration",
+      "description": "Prize presentations, final raffle draw, and community celebration. Thank you for rowing for a great cause!",
       "category": "social"
     }
   ]

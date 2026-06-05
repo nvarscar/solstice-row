@@ -1,0 +1,37 @@
+{
+  "eventYear": "2026",
+  "eventDate": "July 21, 2026",
+  "lastUpdated": "2026-07-21T05:17:00",
+  "teams": [
+    {
+      "id": "rusted-riggers",
+      "name": "Rusted Riggers",
+      "captain": "Carl Schoch",
+      "members": 6,
+      "boatKm": 0,
+      "ergKm": 0,
+      "club": "VCRC",
+      "pledgePerKm": 2.50
+    },
+    {
+      "id": "team-crushed-souls",
+      "name": "Team Crushed-Souls",
+      "captain": "Jane Smith",
+      "members": 4,
+      "boatKm": 0,
+      "ergKm": 0,
+      "club": "VRS",
+      "pledgePerKm": 1.75
+    },
+    {
+      "id": "sunrise-scullers",
+      "name": "Sunrise Scullers",
+      "captain": "Alex Torres",
+      "members": 8,
+      "boatKm": 0,
+      "ergKm": 0,
+      "club": "VCRC",
+      "pledgePerKm": 3.00
+    }
+  ]
+}

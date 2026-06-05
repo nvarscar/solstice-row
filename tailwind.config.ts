@@ -9,23 +9,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: {
-          900: "#0a1628",
-          800: "#0f2240",
-          700: "#14305a",
-          600: "#1a3f74",
+        forest: {
+          950: "#071407",
+          900: "#0d2b0d",
+          800: "#1a4a1a",
+          700: "#225522",
+          600: "#2d7a2d",
+          500: "#3a9e3a",
+          400: "#5cc45c",
+          300: "#86d986",
+          200: "#b8eab8",
+          100: "#e3f7e3",
         },
         solstice: {
-          gold: "#f59e0b",
-          amber: "#d97706",
-          dawn: "#fbbf24",
-          glow: "#fde68a",
+          gold: "#e8b800",
+          "gold-light": "#f5c518",
+          "gold-dark": "#c49a00",
+          "gold-glow": "#fff176",
+          orange: "#e85d04",
+          amber: "#f59e0b",
         },
         water: {
-          deep: "#0c4a6e",
-          mid: "#0369a1",
-          light: "#38bdf8",
-          foam: "#e0f2fe",
+          deep: "#0c3d2a",
+          mid: "#155e3d",
+          light: "#4ade80",
+          foam: "#dcfce7",
         },
       },
       fontFamily: {
@@ -34,13 +42,16 @@ const config: Config = {
       },
       backgroundImage: {
         "hero-gradient":
-          "linear-gradient(to bottom, #0a1628 0%, #0f2240 40%, #1a3f74 70%, #0c4a6e 100%)",
+          "linear-gradient(to bottom, #071407 0%, #0d2b0d 35%, #1a4a1a 70%, #0d2b0d 100%)",
         "gold-gradient":
-          "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)",
+          "linear-gradient(135deg, #e8b800 0%, #f5c518 50%, #c49a00 100%)",
+        "sunrise-gradient":
+          "linear-gradient(to right, #e85d04, #e8b800, #f5c518)",
       },
       animation: {
         "fade-up": "fadeUp 0.8s ease-out forwards",
         shimmer: "shimmer 2s infinite",
+        pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
       keyframes: {
         fadeUp: {

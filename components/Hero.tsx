@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Clock, ChevronDown } from "lucide-react";
+import { Calendar, MapPin, Sunrise, Sunset, ChevronDown } from "lucide-react";
 
 interface HeroProps {
   name: string;
@@ -6,11 +6,14 @@ interface HeroProps {
   heroSubtitle: string;
   date: string;
   location: string;
-  startTime: string;
+  venue: string;
+  sunriseTime: string;
+  sunsetTime: string;
   edition: string;
   registrationUrl: string;
   registrationOpen: boolean;
   registrationDeadline: string;
+  donationUrl: string;
 }
 
 export default function Hero({
@@ -19,71 +22,72 @@ export default function Hero({
   heroSubtitle,
   date,
   location,
-  startTime,
+  venue,
+  sunriseTime,
+  sunsetTime,
   edition,
   registrationUrl,
   registrationOpen,
   registrationDeadline,
+  donationUrl,
 }: HeroProps) {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 30%, rgba(245,158,11,0.12) 0%, transparent 60%), linear-gradient(to bottom, #0a1628 0%, #0f2240 40%, #1a3f74 70%, #0c4a6e 100%)",
-        }}
-      />
+      <div className="absolute inset-0 z-0 hero-bg" />
 
-      <div className="absolute bottom-0 left-0 right-0 h-48 z-0 overflow-hidden">
+      <div className="absolute bottom-0 left-0 right-0 h-40 z-0 overflow-hidden">
         <svg
-          viewBox="0 0 1440 120"
+          viewBox="0 0 1440 100"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="w-full h-full"
           preserveAspectRatio="none"
         >
           <path
-            d="M0,60 C240,100 480,20 720,60 C960,100 1200,20 1440,60 L1440,120 L0,120 Z"
-            fill="rgba(3,105,161,0.25)"
+            d="M0,50 C240,90 480,10 720,50 C960,90 1200,10 1440,50 L1440,100 L0,100 Z"
+            className="hero-wave-upper"
           />
           <path
-            d="M0,80 C240,40 480,100 720,70 C960,40 1200,90 1440,65 L1440,120 L0,120 Z"
-            fill="rgba(12,74,110,0.4)"
+            d="M0,70 C360,30 720,80 1080,40 C1200,25 1350,60 1440,55 L1440,100 L0,100 Z"
+            className="hero-wave-lower"
           />
         </svg>
       </div>
 
       <div className="relative z-10 text-center px-4 sm:px-6 max-w-5xl mx-auto pt-24">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-sm text-blue-200 mb-8 animate-fade-up">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-solstice-gold/30 text-sm text-solstice-gold mb-8 animate-fade-up">
           <span className="w-2 h-2 rounded-full bg-solstice-gold animate-pulse" />
-          {edition} Season
+          {venue} · {edition}
         </div>
 
         <h1 className="text-6xl sm:text-8xl font-bold tracking-tight mb-4 animate-fade-up animation-delay-200">
           <span className="gold-shimmer">{name}</span>
         </h1>
 
-        <p className="text-xl sm:text-2xl text-blue-100 font-light italic mb-4 animate-fade-up animation-delay-200">
+        <p className="text-xl sm:text-2xl text-solstice-gold font-semibold uppercase tracking-wide mb-4 animate-fade-up animation-delay-200">
           {tagline}
         </p>
 
-        <p className="text-base sm:text-lg text-blue-200/80 max-w-2xl mx-auto mb-10 animate-fade-up animation-delay-400">
+        <p className="text-base sm:text-lg text-forest-200/80 max-w-2xl mx-auto mb-10 animate-fade-up animation-delay-400">
           {heroSubtitle}
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 mb-10 animate-fade-up animation-delay-400">
-          <div className="flex items-center gap-2 text-blue-100">
+          <div className="flex items-center gap-2 text-forest-100">
             <Calendar className="w-5 h-5 text-solstice-gold flex-shrink-0" />
             <span className="text-sm sm:text-base">{date}</span>
           </div>
-          <div className="flex items-center gap-2 text-blue-100">
+          <div className="flex items-center gap-2 text-forest-100">
             <MapPin className="w-5 h-5 text-solstice-gold flex-shrink-0" />
             <span className="text-sm sm:text-base">{location}</span>
           </div>
-          <div className="flex items-center gap-2 text-blue-100">
-            <Clock className="w-5 h-5 text-solstice-gold flex-shrink-0" />
-            <span className="text-sm sm:text-base">Starts at {startTime}</span>
+          <div className="flex items-center gap-2 text-forest-100">
+            <Sunrise className="w-5 h-5 text-solstice-orange flex-shrink-0" />
+            <span className="text-sm sm:text-base">{sunriseTime}</span>
+          </div>
+          <div className="flex items-center gap-2 text-forest-100">
+            <Sunset className="w-5 h-5 text-solstice-orange flex-shrink-0" />
+            <span className="text-sm sm:text-base">{sunsetTime}</span>
           </div>
         </div>
 
@@ -94,13 +98,18 @@ export default function Hero({
                 href={registrationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-8 py-3.5 bg-solstice-gold text-navy-900 font-bold text-base rounded-xl hover:bg-solstice-dawn hover:shadow-lg hover:shadow-amber-500/25 transition-all duration-200 transform hover:-translate-y-0.5"
+                className="px-8 py-3.5 bg-solstice-gold text-forest-950 font-bold text-base rounded-xl hover:bg-solstice-gold-light hover:shadow-lg hover:shadow-solstice-gold/25 transition-all duration-200 transform hover:-translate-y-0.5"
               >
-                Register for {edition}
+                Register Your Team
               </a>
-              <span className="text-blue-300 text-sm">
-                Deadline: {registrationDeadline}
-              </span>
+              <a
+                href={donationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-8 py-3.5 bg-white/10 border border-solstice-gold/40 text-solstice-gold font-semibold text-base rounded-xl hover:bg-white/15 transition-all duration-200"
+              >
+                Donate / Pledge
+              </a>
             </>
           ) : (
             <div className="px-8 py-3.5 bg-white/10 text-white/60 font-semibold text-base rounded-xl border border-white/20 cursor-not-allowed">
@@ -108,11 +117,17 @@ export default function Hero({
             </div>
           )}
         </div>
+
+        {registrationOpen && (
+          <p className="text-forest-400 text-sm mt-4 animate-fade-up animation-delay-600">
+            Registration deadline: {registrationDeadline}
+          </p>
+        )}
       </div>
 
       <a
         href="#about"
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-blue-300 hover:text-white transition-colors animate-bounce"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-forest-300 hover:text-white transition-colors animate-bounce"
         aria-label="Scroll down"
       >
         <ChevronDown className="w-6 h-6" />

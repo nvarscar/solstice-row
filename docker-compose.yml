@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -9,9 +7,14 @@ services:
       - .:/app
       - /app/node_modules
       - /app/.next
+      - solstice_data:/data
     environment:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
-    command: npm run dev
+      - DATA_DIR=/data
     stdin_open: true
     tty: true
+
+volumes:
+  solstice_data:
+    driver: local
