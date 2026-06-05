@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import fs from "fs";
 import path from "path";
 import { getCredentials, verifyToken } from "@/lib/auth";
-import { getDb, getAllTeams } from "@/lib/db";
+import { getDb, getAllTeams, getAllScheduleItems, saveScheduleItems } from "@/lib/db";
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
 const ALLOWED = ["event", "schedule", "teams", "sponsors"];
@@ -37,6 +37,14 @@ export async function GET(
       return NextResponse.json({ error: "Failed to load teams" }, { status: 500 });
     }
   }
+  if (type === "schedule") {
+    try {
+      return NextResponse.json({ items: getAllScheduleItems(getDb()) });
+    } catch (err) {
+      console.error("Failed to load schedule from DB:", err);
+      return NextResponse.json({ error: "Failed to load schedule" }, { status: 500 });
+    }
+  }
   try {
     const data = JSON.parse(fs.readFileSync(contentFilePath(type), "utf-8"));
     return NextResponse.json(data);
@@ -62,10 +70,22 @@ export async function PUT(
       { status: 405 }
     );
   }
+  if (type === "schedule") {
+    try {
+      const body = await request.json();
+      if (!Array.isArray(body.items)) {
+        return NextResponse.json({ error: "Invalid schedule data" }, { status: 400 });
+      }
+      const sorted = saveScheduleItems(getDb(), body.items);
+      return NextResponse.json({ items: sorted });
+    } catch {
+      return NextResponse.json({ error: "Failed to save schedule" }, { status: 500 });
+    }
+  }
   try {
     const body = await request.json();
     fs.writeFileSync(contentFilePath(type), JSON.stringify(body, null, 2));
-    return NextResponse.json({ success: true });
+    return NextResponse.json(body);
   } catch {
     return NextResponse.json({ error: "Failed to save" }, { status: 500 });
   }

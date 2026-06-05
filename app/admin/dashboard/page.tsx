@@ -15,6 +15,8 @@ import {
   Trash2,
   Check,
   RotateCcw,
+  Calendar,
+  Plus,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -41,7 +43,14 @@ interface TeamsData {
   teams: Team[];
 }
 
-type Tab = "leaderboard" | "teams" | "password";
+interface ScheduleItem {
+  time: string;
+  title: string;
+  description: string;
+  category: string;
+}
+
+type Tab = "leaderboard" | "teams" | "schedule" | "password";
 
 function StatusBadge({ msg, type }: { msg: string; type: "ok" | "err" | null }) {
   if (!msg) return null;
@@ -262,6 +271,85 @@ function TeamEditCard({
   );
 }
 
+const SCHEDULE_CATEGORIES = ["row", "milestone", "logistics", "social", "race"] as const;
+
+function ScheduleItemCard({
+  item,
+  onChange,
+  onDelete,
+}: {
+  item: ScheduleItem;
+  onChange: (field: keyof ScheduleItem, value: string) => void;
+  onDelete: () => void;
+}) {
+  const inputCls =
+    "w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-solstice-gold/50";
+  return (
+    <div className="card-glass rounded-2xl p-4">
+      <div className="flex gap-3">
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-forest-300 mb-1">
+              Time<span className="text-red-400 ml-0.5">*</span>
+            </label>
+            <input
+              type="text"
+              value={item.time}
+              onChange={(e) => onChange("time", e.target.value)}
+              placeholder="e.g. 5:00 AM"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-forest-300 mb-1">Category</label>
+            <select
+              value={item.category}
+              onChange={(e) => onChange("category", e.target.value)}
+              className={inputCls}
+            >
+              {SCHEDULE_CATEGORIES.map((c) => (
+                <option key={c} value={c} className="bg-forest-950 text-white capitalize">
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs text-forest-300 mb-1">
+              Title<span className="text-red-400 ml-0.5">*</span>
+            </label>
+            <input
+              type="text"
+              value={item.title}
+              onChange={(e) => onChange("title", e.target.value)}
+              placeholder="Event title"
+              className={inputCls}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs text-forest-300 mb-1">Description</label>
+            <textarea
+              value={item.description}
+              onChange={(e) => onChange("description", e.target.value)}
+              placeholder="Event description"
+              rows={2}
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+        </div>
+        <div className="flex-shrink-0 pt-5">
+          <button
+            onClick={onDelete}
+            className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("leaderboard");
@@ -278,6 +366,12 @@ export default function DashboardPage() {
   const [dirtyTeamIds, setDirtyTeamIdsState] = useState(new Set<string>());
   const [savingTeamIds, setSavingTeamIds] = useState(new Set<string>());
   const [teamSaveStatus, setTeamSaveStatus] = useState<Record<string, "ok" | "err">>({});
+
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
+  const [scheduleLoaded, setScheduleLoaded] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleDirty, setScheduleDirty] = useState(false);
+  const [scheduleStatus, setScheduleStatus] = useState<{ msg: string; type: "ok" | "err" | null }>({ msg: "", type: null });
 
   function markDirty(id: string) {
     dirtyRef.current = new Set(dirtyRef.current).add(id);
@@ -322,7 +416,24 @@ export default function DashboardPage() {
     }
   }, [router]);
 
+  const loadSchedule = useCallback(async () => {
+    try {
+      const res = await fetch("/api/content/schedule");
+      if (res.status === 401) { router.push("/admin/login"); return; }
+      const data = await res.json();
+      setScheduleItems(data.items ?? []);
+      setScheduleLoaded(true);
+      setScheduleDirty(false);
+    } catch {
+      setScheduleStatus({ msg: "Failed to load schedule", type: "err" });
+    }
+  }, [router]);
+
   useEffect(() => { loadTeams(); }, [loadTeams]);
+
+  useEffect(() => {
+    if (tab === "schedule" && !scheduleLoaded) loadSchedule();
+  }, [tab, scheduleLoaded, loadSchedule]);
 
   useEffect(() => { setStatus({ msg: "", type: null }); }, [tab]);
 
@@ -518,6 +629,30 @@ export default function DashboardPage() {
     setPwSaving(false);
   }
 
+  async function saveSchedule() {
+    setScheduleSaving(true);
+    setScheduleStatus({ msg: "", type: null });
+    try {
+      const res = await fetch("/api/content/schedule", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: scheduleItems }),
+      });
+      if (!res.ok) {
+        setScheduleStatus({ msg: "Failed to save schedule", type: "err" });
+      } else {
+        const data = await res.json();
+        setScheduleItems(data.items ?? scheduleItems);
+        setScheduleDirty(false);
+        setScheduleStatus({ msg: "Schedule saved and sorted by time!", type: "ok" });
+        setTimeout(() => setScheduleStatus({ msg: "", type: null }), 3000);
+      }
+    } catch {
+      setScheduleStatus({ msg: "Network error", type: "err" });
+    }
+    setScheduleSaving(false);
+  }
+
   const approvedTeams = teamsData
     ? [...teamsData.teams]
         .filter((t) => t.status === "approved")
@@ -593,6 +728,7 @@ export default function DashboardPage() {
                 label: `Teams${pendingTeams.length ? ` (${pendingTeams.length})` : ""}`,
                 icon: ClipboardList,
               },
+              { id: "schedule", label: "Schedule", icon: Calendar },
               { id: "password", label: "Change Password", icon: Key },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
@@ -851,6 +987,86 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Schedule Tab ── */}
+        {tab === "schedule" && (
+          <div className="space-y-6">
+            <div className="flex items-start justify-between gap-2 flex-wrap">
+              <div>
+                <h2 className="text-white text-xl font-bold">Event Schedule</h2>
+                <p className="text-forest-400 text-xs mt-0.5">
+                  {scheduleItems.length} event{scheduleItems.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => { setScheduleLoaded(false); loadSchedule(); }}
+                  className="flex items-center gap-1.5 px-3 py-2 card-glass rounded-lg text-forest-200 text-sm hover:bg-white/10 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reload
+                </button>
+                {scheduleDirty && (
+                  <button
+                    onClick={saveSchedule}
+                    disabled={scheduleSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-solstice-gold text-forest-950 rounded-lg text-sm font-bold hover:bg-solstice-gold-light disabled:opacity-50 transition-colors"
+                  >
+                    {scheduleSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Timeline
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {scheduleStatus.msg && <StatusBadge msg={scheduleStatus.msg} type={scheduleStatus.type} />}
+
+            {!scheduleLoaded ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-forest-400" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  {scheduleItems.map((item, i) => (
+                    <ScheduleItemCard
+                      key={i}
+                      item={item}
+                      onChange={(field, value) => {
+                        const next = [...scheduleItems];
+                        next[i] = { ...next[i], [field]: value };
+                        setScheduleItems(next);
+                        setScheduleDirty(true);
+                      }}
+                      onDelete={() => {
+                        setScheduleItems(scheduleItems.filter((_, idx) => idx !== i));
+                        setScheduleDirty(true);
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setScheduleItems([
+                      ...scheduleItems,
+                      { time: "", title: "", description: "", category: "row" },
+                    ]);
+                    setScheduleDirty(true);
+                  }}
+                  className="w-full py-3 card-glass rounded-xl border border-dashed border-white/20 text-forest-300 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Event
+                </button>
+
+                <p className="text-forest-500 text-xs text-center">
+                  Events are automatically sorted by start time when saved.
+                </p>
               </>
             )}
           </div>

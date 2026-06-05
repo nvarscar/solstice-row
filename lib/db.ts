@@ -25,6 +25,23 @@ export interface TeamsData {
   teams: Team[];
 }
 
+export interface ScheduleItem {
+  time: string;
+  title: string;
+  description: string;
+  category: string;
+}
+
+function parseScheduleMinutes(t: string): number {
+  const m = t.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+  if (!m) return 0;
+  let h = parseInt(m[1]);
+  const min = parseInt(m[2]);
+  if (m[3].toUpperCase() === "PM" && h !== 12) h += 12;
+  if (m[3].toUpperCase() === "AM" && h === 12) h = 0;
+  return h * 60 + min;
+}
+
 let _db: Database.Database | null = null;
 
 function dbPath(): string {
@@ -48,6 +65,14 @@ function initSchema(db: Database.Database): void {
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS schedule_items (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      time         TEXT NOT NULL,
+      time_minutes INTEGER NOT NULL DEFAULT 0,
+      title        TEXT NOT NULL DEFAULT '',
+      description  TEXT NOT NULL DEFAULT '',
+      category     TEXT NOT NULL DEFAULT 'row'
+    );
     CREATE TABLE IF NOT EXISTS teams (
       id           TEXT PRIMARY KEY,
       name         TEXT NOT NULL,
@@ -69,6 +94,31 @@ function initSchema(db: Database.Database): void {
   insertMeta.run("eventYear", new Date().getFullYear().toString());
   insertMeta.run("eventDate", "");
   insertMeta.run("lastUpdated", new Date().toISOString());
+
+  const { sc } = db.prepare("SELECT COUNT(*) as sc FROM schedule_items").get() as { sc: number };
+  if (sc === 0) {
+    const schedJsonPath = path.join(process.cwd(), "content", "schedule.json");
+    if (fs.existsSync(schedJsonPath)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(schedJsonPath, "utf-8")) as { items: ScheduleItem[] };
+        if (Array.isArray(raw.items)) {
+          const insertSched = db.prepare(`
+            INSERT INTO schedule_items (time, time_minutes, title, description, category)
+            VALUES (@time, @time_minutes, @title, @description, @category)
+          `);
+          const sorted = [...raw.items].sort(
+            (a, b) => parseScheduleMinutes(a.time) - parseScheduleMinutes(b.time)
+          );
+          db.transaction((items: ScheduleItem[]) => {
+            for (const item of items)
+              insertSched.run({ ...item, time_minutes: parseScheduleMinutes(item.time) });
+          })(sorted);
+        }
+      } catch {
+        // seeding failed; continue with empty schedule
+      }
+    }
+  }
 
   const { c } = db.prepare("SELECT COUNT(*) as c FROM teams").get() as { c: number };
   if (c === 0) {
@@ -94,6 +144,33 @@ function initSchema(db: Database.Database): void {
       }
     }
   }
+}
+
+export function getAllScheduleItems(db: Database.Database): ScheduleItem[] {
+  return db
+    .prepare(
+      "SELECT time, title, description, category FROM schedule_items ORDER BY time_minutes ASC"
+    )
+    .all() as ScheduleItem[];
+}
+
+export function saveScheduleItems(
+  db: Database.Database,
+  items: ScheduleItem[]
+): ScheduleItem[] {
+  const sorted = [...items].sort(
+    (a, b) => parseScheduleMinutes(a.time) - parseScheduleMinutes(b.time)
+  );
+  db.transaction(() => {
+    db.prepare("DELETE FROM schedule_items").run();
+    const insert = db.prepare(`
+      INSERT INTO schedule_items (time, time_minutes, title, description, category)
+      VALUES (@time, @time_minutes, @title, @description, @category)
+    `);
+    for (const item of sorted)
+      insert.run({ ...item, time_minutes: parseScheduleMinutes(item.time) });
+  })();
+  return sorted;
 }
 
 export function getAllTeams(db: Database.Database): TeamsData {

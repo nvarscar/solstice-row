@@ -1,5 +1,15 @@
 import clsx from "clsx";
 
+function parseTimeMinutes(t: string): number {
+  const m = t.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+  if (!m) return 0;
+  let h = parseInt(m[1]);
+  const min = parseInt(m[2]);
+  if (m[3].toUpperCase() === "PM" && h !== 12) h += 12;
+  if (m[3].toUpperCase() === "AM" && h === 12) h = 0;
+  return h * 60 + min;
+}
+
 interface ScheduleItem {
   time: string;
   title: string;
@@ -29,6 +39,7 @@ const categoryDots: Record<string, string> = {
 };
 
 export default function Schedule({ items, date }: ScheduleProps) {
+  const sorted = [...items].sort((a, b) => parseTimeMinutes(a.time) - parseTimeMinutes(b.time));
   return (
     <section id="schedule" className="py-24 px-4 sm:px-6 relative">
       <div className="max-w-3xl mx-auto">
@@ -45,12 +56,12 @@ export default function Schedule({ items, date }: ScheduleProps) {
           <div className="absolute left-[88px] sm:left-24 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent" />
 
           <div className="space-y-2">
-            {items.map((item, i) => (
+            {sorted.map((item, i) => (
               <div
                 key={i}
                 className="relative flex gap-4 sm:gap-6 group"
               >
-                <div className="flex-shrink-0 w-20 sm:w-24 text-right pt-6">
+                <div className="flex-shrink-0 w-20 sm:w-24 text-right pt-6 pr-3">
                   <span className="text-xs sm:text-sm text-forest-300 font-mono">
                     {item.time}
                   </span>

@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { getDb, getAllScheduleItems } from "@/lib/db";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
@@ -10,12 +11,12 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 
 import eventData from "@/content/event.json";
-import scheduleData from "@/content/schedule.json";
 import sponsorsData from "@/content/sponsors.json";
 
 export const dynamic = "force-dynamic";
 
 export default function Home() {
+  const scheduleItems = getAllScheduleItems(getDb());
   const teamsRaw = JSON.parse(
     fs.readFileSync(path.join(process.cwd(), "content", "teams.json"), "utf-8")
   );
@@ -51,7 +52,7 @@ export default function Home() {
         format={eventData.format}
       />
 
-      <Schedule items={scheduleData.items} date={eventData.date} />
+      <Schedule items={scheduleItems} date={eventData.date} />
 
       <Results teamsData={teamsData} />
 
