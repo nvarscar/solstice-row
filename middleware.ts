@@ -3,9 +3,10 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  // Normalize trailing slash so /admin/login/ and /admin/login both work
+  const p = pathname.endsWith("/") && pathname !== "/" ? pathname.slice(0, -1) : pathname;
 
-  const isAdminPage =
-    pathname.startsWith("/admin") && pathname !== "/admin/login";
+  const isAdminPage = p.startsWith("/admin") && p !== "/admin/login";
   const isContentApi = pathname.startsWith("/api/content");
   const isChangePasswordApi = pathname === "/api/auth/change-password";
 
