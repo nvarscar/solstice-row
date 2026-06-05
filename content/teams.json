@@ -1,23 +1,8 @@
 {
   "eventYear": "2026",
   "eventDate": "July 21, 2026",
-  "lastUpdated": "2026-06-05T06:04:29.613Z",
+  "lastUpdated": "2026-06-05T06:11:23.858Z",
   "teams": [
-    {
-      "id": "rusted-riggers",
-      "name": "Rusted Riggers",
-      "captain": "Carl Schoch",
-      "captainEmail": "cschochak@gmail.com",
-      "captainPhone": "",
-      "members": 6,
-      "boatM": 234,
-      "ergM": 234,
-      "club": "VCRC",
-      "pledgePerKm": 2.5,
-      "notes": "",
-      "status": "approved",
-      "registeredAt": "2026-07-01T00:00:00Z"
-    },
     {
       "id": "team-crushed-souls",
       "name": "Team Crushed-Souls",
@@ -57,10 +42,10 @@
       "club": "VCRC",
       "members": 15,
       "pledgePerKm": 500,
-      "boatM": 0,
+      "boatM": 234,
       "ergM": 0,
       "notes": "I am Groot!",
-      "status": "pending",
+      "status": "approved",
       "registeredAt": "2026-06-05T05:57:17.404Z"
     }
   ]

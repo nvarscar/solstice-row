@@ -15,6 +15,22 @@ services:
     stdin_open: true
     tty: true
 
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/http-only.conf:/etc/nginx/templates/http-only.conf:ro
+      - ./nginx/https.conf:/etc/nginx/templates/https.conf:ro
+      - ./nginx/docker-entrypoint.sh:/etc/nginx/docker-entrypoint.sh:ro
+      # Set LETSENCRYPT_DIR to your certbot conf path, e.g. /home/user/certbot/conf
+      - ${LETSENCRYPT_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
+    entrypoint: ["/bin/sh", "/etc/nginx/docker-entrypoint.sh"]
+    depends_on:
+      - web
+    restart: unless-stopped
+
 volumes:
   solstice_data:
     driver: local
