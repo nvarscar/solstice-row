@@ -6,7 +6,7 @@ Website for the **Elk Lake Summer Solstice Row** hosted by Victoria City Rowing 
 
 - **Next.js 16** (App Router) + TypeScript + TailwindCSS
 - **Forest green + gold** colour scheme (`tailwind.config.ts`)
-- **Custom admin panel** at `/admin` — password auth, no third-party CMS
+- **Custom admin panel** at `/admin` — password auth, transactional per-team edits, no third-party CMS
 - **Docker** — single-command start, persistent storage volume, no local Node.js required
 
 ---
@@ -71,7 +71,7 @@ docker compose down
 
 ## Content Management
 
-Event details, schedule, and sponsor data are stored as JSON files in `content/`. Team registrations are stored separately in the persistent `solstice_data` Docker volume at `/data/teams.json` (see [Data Persistence](#data-persistence) below). The admin panel provides a browser UI to edit all of these.
+Event details, schedule, and sponsor data are stored as JSON files in `content/`. Team registrations are stored in **SQLite** (`teams.db`) in the persistent `solstice_data` Docker volume at `/data/` (see [Data Persistence](#data-persistence) below). The admin panel provides a browser UI to edit all of these, with per-team transactions for concurrent editing.
 
 ### Via the Admin Panel
 
@@ -84,9 +84,9 @@ Event details, schedule, and sponsor data are stored as JSON files in `content/`
 
 | File | What it controls |
 |------|-----------------|
-| `content/event.json` | Event name, date, venue, registration URL, donation URL, contact email, cause description, event format |
+| `content/event.json` | Event name, date, venue, donation URL, contact email, cause description, event format |
 | `content/schedule.json` | Day-of schedule items (time, title, description, category) |
-| `content/teams.json` | Seed data only — copied into `/data/teams.json` on first run; live data lives in the Docker volume |
+| `content/teams.json` | Seed data only — copied into SQLite (`teams.db`) on first run; live data lives in the Docker volume |
 | `content/sponsors.json` | Sponsor tiers (Gold / Silver / Bronze) with name, URL, and optional logo path |
 
 #### Updating the Team Leaderboard (event day)
@@ -118,12 +118,11 @@ Edit `content/event.json`. Key fields:
 
 ```json
 {
-  "date": "July 21, 2026",
-  "sunriseTime": "5:17 AM",
-  "sunsetTime": "9:23 PM",
+  "date": "June 21, 2026",
+  "sunriseTime": "5:11 AM",
+  "sunsetTime": "9:18 PM",
   "venue": "Victoria City Rowing Club",
   "location": "Elk Lake, Victoria, BC",
-  "registrationUrl": "https://vcrc.bc.ca/solstice-row-register",
   "donationUrl": "https://vcrc.bc.ca/donate",
   "contactEmail": "clubadmin@vcrc.bc.ca"
 }
@@ -142,7 +141,8 @@ Edit `content/event.json`. Key fields:
 │   │   └── page.tsx            # Redirects → /admin/dashboard
 │   ├── api/
 │   │   ├── auth/               # login / logout / change-password
-│   │   ├── content/[type]/     # GET + PUT for content JSON files
+│   │   ├── content/[type]/     # GET + PUT for event/schedule/sponsors; GET for teams
+│   │   ├── content/teams/[id]/ # PATCH + DELETE for transactional team updates
 │   │   └── registrations/      # POST — public team registration endpoint
 │   ├── globals.css             # CSS variables + utility classes (no hardcoded colours)
 │   ├── layout.tsx
@@ -163,14 +163,15 @@ Edit `content/event.json`. Key fields:
 │   └── sponsors.json
 ├── lib/
 │   ├── auth.ts                 # Password hashing, token creation, credential I/O
-│   └── teams-file.ts           # Resolves teams.json path (volume in prod, content/ fallback)
+│   ├── db.ts                   # SQLite database singleton + team CRUD operations
+│   └── teams-file.ts           # (legacy) Resolves teams.json path — do not use for teams
 ├── proxy.ts                    # Auth guard for /admin/* and /api/content/* (Next.js 16 proxy convention)
 ├── nginx/
 │   ├── docker-entrypoint.sh    # Detects certs, selects http-only or https config
 │   ├── http-only.conf          # nginx config — HTTP proxy to web:3000
 │   └── https.conf              # nginx config — TLS termination + HTTP→HTTPS redirect
 ├── scripts/
-│   ├── init.sh                 # First-run: seeds /data/teams.json + generates admin password
+│   ├── init.sh                 # First-run: generates admin password (DB seeds itself on first access)
 │   ├── issue-solsticerow.sh    # Let's Encrypt cert issuance (run from ~/certbot)
 │   └── renew-solsticerow.sh    # Let's Encrypt cert renewal  (run from ~/certbot)
 ├── tailwind.config.ts          # Colour theme (forest green + gold)
@@ -367,21 +368,28 @@ All mutable runtime data lives in the `solstice_data` named Docker volume, mount
 
 | Path in volume | Contents |
 |---|---|
-| `/data/teams.json` | All team registrations (live data) |
+| `/data/teams.db` | All team registrations — SQLite database with WAL mode for concurrent access |
 | `/data/auth/credentials.json` | Admin username + hashed password |
 
-**On first container start**, `init.sh` copies `content/teams.json` from the image into the volume as seed data (only if `/data/teams.json` doesn't already exist).
+**On first container start**, the database is created automatically on first access and seeded from `content/teams.json` (only if `/data/teams.db` doesn't already exist).
 
-### Backup
+### Backup (SQLite)
 
 ```bash
-docker compose exec web cat /data/teams.json > teams-backup-$(date +%Y%m%d).json
+docker compose exec web sqlite3 /data/teams.db ".backup /data/teams-backup-$(date +%Y%m%d).db"
+docker compose cp web:/data/teams-backup-$(date +%Y%m%d).db .
 ```
 
-### Restore
+Or export to JSON:
+```bash
+docker compose exec web sh -c 'cd /data && sqlite3 teams.db "SELECT json_object('eventYear', (SELECT value FROM meta WHERE key='eventYear'), 'eventDate', (SELECT value FROM meta WHERE key='eventDate'), 'lastUpdated', (SELECT value FROM meta WHERE key='lastUpdated'), 'teams', json_group_array(json_object('id', id, 'name', name, 'captain', captain, 'captainEmail', captainEmail, 'captainPhone', captainPhone, 'club', club, 'members', members, 'boatM', boatM, 'ergM', ergM, 'pledgePerKm', pledgePerKm, 'notes', notes, 'status', status, 'registeredAt', registeredAt))) FROM teams;
+"' > teams-backup-$(date +%Y%m%d).json
+```
+
+### Restore (SQLite)
 
 ```bash
-docker cp teams-backup-20260721.json $(docker compose ps -q web):/data/teams.json
+docker cp teams-backup-20260721.db $(docker compose ps -q web):/data/teams.db
 ```
 
 ---

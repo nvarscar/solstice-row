@@ -68,6 +68,7 @@ function Field({
   label,
   value,
   onChange,
+  onBlur,
   type = "text",
   required,
   placeholder,
@@ -76,6 +77,7 @@ function Field({
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   type?: string;
   required?: boolean;
   placeholder?: string;
@@ -93,6 +95,7 @@ function Field({
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           placeholder={placeholder}
           rows={2}
           className={`${cls} resize-none`}
@@ -102,6 +105,7 @@ function Field({
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
           placeholder={placeholder}
           className={cls}
         />
@@ -131,6 +135,8 @@ function TeamEditCard({
   onRevoke?: () => void;
   onDelete: () => void;
 }) {
+  const [membersDraft, setMembersDraft] = useState<string | null>(null);
+  const [pledgeDraft, setPledgeDraft] = useState<string | null>(null);
   return (
     <div className="card-glass rounded-2xl p-5 space-y-4">
       <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -231,14 +237,16 @@ function TeamEditCard({
         />
         <Field
           label="Number of Members"
-          value={String(team.members)}
-          onChange={(v) => onChange("members", parseInt(v) || 1)}
+          value={membersDraft ?? String(team.members)}
+          onChange={(v) => setMembersDraft(v)}
+          onBlur={() => { if (membersDraft !== null) { onChange("members", parseInt(membersDraft) || 1); setMembersDraft(null); } }}
           type="number"
         />
         <Field
           label="Pledge Rate ($ / km)"
-          value={String(team.pledgePerKm)}
-          onChange={(v) => onChange("pledgePerKm", parseFloat(v) || 0)}
+          value={pledgeDraft ?? String(team.pledgePerKm)}
+          onChange={(v) => setPledgeDraft(v)}
+          onBlur={() => { if (pledgeDraft !== null) { onChange("pledgePerKm", parseFloat(pledgeDraft) || 0); setPledgeDraft(null); } }}
           type="number"
           placeholder="0.00"
         />
@@ -307,6 +315,8 @@ export default function DashboardPage() {
       if (res.status === 401) { router.push("/admin/login"); return; }
       setTeamsData(await res.json());
       clearAllDirty();
+      setMetricsDraft({});
+      setAddDelta({});
     } catch {
       setStatus({ msg: "Failed to load teams data", type: "err" });
     }
@@ -329,6 +339,7 @@ export default function DashboardPage() {
 
   function updateMeters(id: string, field: "boatM" | "ergM", raw: string) {
     setMetricsDraft((prev) => ({ ...prev, [id]: { ...prev[id], [field]: raw } }));
+    markDirty(id);
   }
 
   function commitMeters(id: string, field: "boatM" | "ergM") {
@@ -431,14 +442,26 @@ export default function DashboardPage() {
     if (!teamsData) return;
     const team = teamsData.teams.find((t) => t.id === id);
     if (!team) return;
+    const draft = metricsDraft[id];
+    const effectiveTeam = draft
+      ? {
+          ...team,
+          boatM: draft.boatM !== undefined ? Math.max(0, parseFloat(draft.boatM) || 0) : team.boatM,
+          ergM: draft.ergM !== undefined ? Math.max(0, parseFloat(draft.ergM) || 0) : team.ergM,
+        }
+      : team;
     setSavingTeamIds((prev) => new Set(prev).add(id));
     try {
       const res = await fetch(`/api/content/teams/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(team),
+        body: JSON.stringify(effectiveTeam),
       });
       if (res.ok) {
+        setTeamsData((prev) =>
+          prev ? { ...prev, teams: prev.teams.map((t) => (t.id === id ? effectiveTeam : t)) } : prev
+        );
+        setMetricsDraft((prev) => { const next = { ...prev }; delete next[id]; return next; });
         clearDirty(id);
         setTeamSaveStatus((prev) => ({ ...prev, [id]: "ok" }));
         setTimeout(() => setTeamSaveStatus((prev) => { const next = { ...prev }; delete next[id]; return next; }), 2000);
@@ -689,13 +712,13 @@ export default function DashboardPage() {
                           <div key={field}>
                             <label className="block text-xs text-forest-300 mb-1">{label}</label>
                             <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={metricsDraft[team.id]?.[field] !== undefined ? metricsDraft[team.id][field] : team[field]}
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={metricsDraft[team.id]?.[field] !== undefined ? metricsDraft[team.id][field] : String(team[field])}
                               onChange={(e) => updateMeters(team.id, field, e.target.value)}
                               onBlur={() => commitMeters(team.id, field)}
-                              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-solstice-gold/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-solstice-gold/50"
                             />
                             <div className="flex gap-1.5 mt-1.5">
                               <input
