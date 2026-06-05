@@ -4,7 +4,6 @@ interface ContactProps {
   contactEmail: string;
   location: string;
   address: string;
-  registrationUrl: string;
   donationUrl: string;
   registrationOpen: boolean;
 }
@@ -13,7 +12,6 @@ export default function Contact({
   contactEmail,
   location,
   address,
-  registrationUrl,
   donationUrl,
   registrationOpen,
 }: ContactProps) {
@@ -81,9 +79,7 @@ export default function Contact({
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <a
-                href={registrationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/register"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-solstice-gold text-forest-950 font-bold rounded-xl hover:bg-solstice-gold-light transition-colors"
               >
                 Register Your Team

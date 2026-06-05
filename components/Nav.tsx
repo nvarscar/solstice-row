@@ -12,11 +12,10 @@ const links = [
 ];
 
 interface NavProps {
-  registrationUrl: string;
   registrationOpen: boolean;
 }
 
-export default function Nav({ registrationUrl, registrationOpen }: NavProps) {
+export default function Nav({ registrationOpen }: NavProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 

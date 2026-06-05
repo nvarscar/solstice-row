@@ -27,7 +27,6 @@ export default function Home() {
   return (
     <main>
       <Nav
-        registrationUrl={eventData.registrationUrl}
         registrationOpen={eventData.registrationOpen}
       />
 
@@ -41,7 +40,6 @@ export default function Home() {
         sunriseTime={eventData.sunriseTime}
         sunsetTime={eventData.sunsetTime}
         edition={eventData.edition}
-        registrationUrl={eventData.registrationUrl}
         registrationOpen={eventData.registrationOpen}
         registrationDeadline={eventData.registrationDeadline}
         donationUrl={eventData.donationUrl}
@@ -63,7 +61,6 @@ export default function Home() {
         contactEmail={eventData.contactEmail}
         location={eventData.location}
         address={eventData.address}
-        registrationUrl={eventData.registrationUrl}
         donationUrl={eventData.donationUrl}
         registrationOpen={eventData.registrationOpen}
       />

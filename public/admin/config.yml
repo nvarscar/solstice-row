@@ -22,7 +22,6 @@ collections:
           - { label: "Start Time", name: "startTime", widget: "string" }
           - { label: "Hero Subtitle", name: "heroSubtitle", widget: "string" }
           - { label: "Description", name: "description", widget: "text" }
-          - { label: "Registration URL", name: "registrationUrl", widget: "string" }
           - { label: "Registration Open", name: "registrationOpen", widget: "boolean", default: true }
           - { label: "Registration Deadline", name: "registrationDeadline", widget: "string" }
           - { label: "Contact Email", name: "contactEmail", widget: "string" }

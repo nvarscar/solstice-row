@@ -10,7 +10,6 @@ interface HeroProps {
   sunriseTime: string;
   sunsetTime: string;
   edition: string;
-  registrationUrl: string;
   registrationOpen: boolean;
   registrationDeadline: string;
   donationUrl: string;
@@ -26,7 +25,6 @@ export default function Hero({
   sunriseTime,
   sunsetTime,
   edition,
-  registrationUrl,
   registrationOpen,
   registrationDeadline,
   donationUrl,
