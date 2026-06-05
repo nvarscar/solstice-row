@@ -1,6 +1,4 @@
-import fs from "fs";
-import path from "path";
-import { getDb, getAllScheduleItems, getAllSponsors } from "@/lib/db";
+import { getDb, getAllScheduleItems, getAllSponsors, getAllTeams } from "@/lib/db";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
@@ -18,12 +16,10 @@ export default function Home() {
   const db = getDb();
   const scheduleItems = getAllScheduleItems(db);
   const { tiers: sponsorTiers } = getAllSponsors(db);
-  const teamsRaw = JSON.parse(
-    fs.readFileSync(path.join(process.cwd(), "content", "teams.json"), "utf-8")
-  );
+  const teamsRaw = getAllTeams(db);
   const teamsData = {
     ...teamsRaw,
-    teams: teamsRaw.teams.filter((t: { status?: string }) => t.status === "approved"),
+    teams: teamsRaw.teams.filter((t) => t.status === "approved"),
   };
 
   return (
