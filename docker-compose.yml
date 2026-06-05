@@ -19,8 +19,8 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
-      - "443:443"
+      - "12080:80"
+      - "12443:443"
     volumes:
       - ./nginx/http-only.conf:/etc/nginx/templates/http-only.conf:ro
       - ./nginx/https.conf:/etc/nginx/templates/https.conf:ro
