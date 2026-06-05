@@ -1,14 +1,28 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import event from "../content/event.json";
+
+const ogTitle = `${event.name} ${event.edition} — ${event.tagline}`;
+const ogDescription =
+  `${event.date} · ${event.location} · ${event.venue} · ` +
+  `Sunrise ${event.sunriseTime} to sunset ${event.sunsetTime}. ` +
+  `${event.heroSubtitle}`;
 
 export const metadata: Metadata = {
-  title: "Solstice Row — Row Through the Longest Day",
-  description:
-    "Solstice Row is an annual open-water rowing event held on the summer solstice. Rowers of all skill levels welcome.",
+  metadataBase: new URL(event.siteUrl),
+  title: `${event.name} ${event.edition} — Row Through the Longest Day`,
+  description: event.description,
   openGraph: {
-    title: "Solstice Row",
-    description: "Row Through the Longest Day",
+    title: ogTitle,
+    description: ogDescription,
     type: "website",
+    siteName: event.name,
+    locale: "en_CA",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: ogTitle,
+    description: ogDescription,
   },
 };
 
