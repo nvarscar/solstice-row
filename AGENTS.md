@@ -23,8 +23,10 @@ docker compose -f docker-compose.dev.yml run --rm web npm <command>
 Always run a production build to confirm no TypeScript or compilation errors before finishing a task:
 
 ```bash
-docker run --rm -v "$(pwd)":/app -w /app node:lts-alpine sh -c "npm install && npm run build"
+docker run --rm -v "$(pwd)":/app -w /app node:lts-alpine sh -c "apk add --no-cache python3 make g++ && npm install && npm run build"
 ```
+
+> `better-sqlite3` is a native module — build tools are required even for the type-check build.
 
 > Note: `rm -rf .next` will fail if `.next` was built by Docker (root-owned). Omit it — Next.js will overwrite it.
 
@@ -45,6 +47,7 @@ Runs `next start` (compiled build). Rebuild the image after any code change — 
 - **`cookies()`** — always `await cookies()` in server components and route handlers.
 - **Tailwind** — v4; config in `tailwind.config.ts` referenced via `@config` in `app/globals.css`. PostCSS plugin is `@tailwindcss/postcss`, not `tailwindcss`.
 - **Content files** — `content/*.json` are runtime data for event, schedule, and sponsors. Edit via admin panel at `/admin` or directly in the files.
-- **`teams.json` persistence** — in production and dev, `teams.json` lives in the `solstice_data` Docker volume at `/data/teams.json`, **not** inside the image. `init.sh` seeds it from `content/teams.json` on first run. Rebuilding the image never destroys registration data. All reads/writes go through `lib/teams-file.ts` — do not hardcode the path in route handlers.
+- **Teams persistence** — team registrations are stored in **SQLite** (`teams.db`) in the `solstice_data` Docker volume at `/data/teams.db`. The DB is created and seeded from `content/teams.json` automatically on first access via `lib/db.ts` (`getDb()`). Rebuilding the image never destroys registration data. All team reads/writes go through `lib/db.ts` — never use `lib/teams-file.ts` for teams. Per-team updates use `PATCH /api/content/teams/:id`; deletions use `DELETE /api/content/teams/:id`.
+- **`better-sqlite3`** — native addon; the Dockerfile adds `python3 make g++` in all `npm ci` stages. `serverExternalPackages: ["better-sqlite3"]` in `next.config.mjs` prevents webpack from bundling it.
 - **Colours** — never hardcode hex values; use theme tokens from `tailwind.config.ts` (e.g. `forest-900`, `solstice-gold`).
 - **`next dev` hostname** — the dev script already passes `-H 0.0.0.0`; do not remove this or the server won't be reachable from the host.

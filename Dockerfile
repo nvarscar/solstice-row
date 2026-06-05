@@ -1,6 +1,7 @@
 # Development stage — source mounted at runtime via volume, hot-reload via next dev
 FROM node:lts-alpine AS dev
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm ci
 COPY scripts/init.sh ./scripts/init.sh
@@ -11,12 +12,14 @@ CMD ["sh", "./scripts/init.sh"]
 # Stage 1: production dependencies only
 FROM node:lts-alpine AS deps
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm ci --omit=dev
 
 # Stage 2: full install + build
 FROM node:lts-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm ci
 COPY . .

@@ -3,15 +3,14 @@ import { cookies } from "next/headers";
 import fs from "fs";
 import path from "path";
 import { getCredentials, verifyToken } from "@/lib/auth";
-import { teamsFilePath } from "@/lib/teams-file";
+import { getDb, getAllTeams } from "@/lib/db";
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
+const ALLOWED = ["event", "schedule", "teams", "sponsors"];
 
 function contentFilePath(type: string): string {
-  if (type === "teams") return teamsFilePath();
   return path.join(CONTENT_DIR, `${type}.json`);
 }
-const ALLOWED = ["event", "schedule", "teams", "sponsors"];
 
 async function isAuthenticated(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -30,10 +29,16 @@ export async function GET(
   if (!ALLOWED.includes(type)) {
     return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
   }
+  if (type === "teams") {
+    try {
+      return NextResponse.json(getAllTeams(getDb()));
+    } catch (err) {
+      console.error("Failed to load teams from DB:", err);
+      return NextResponse.json({ error: "Failed to load teams" }, { status: 500 });
+    }
+  }
   try {
-    const data = JSON.parse(
-      fs.readFileSync(contentFilePath(type), "utf-8")
-    );
+    const data = JSON.parse(fs.readFileSync(contentFilePath(type), "utf-8"));
     return NextResponse.json(data);
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -51,12 +56,15 @@ export async function PUT(
   if (!ALLOWED.includes(type)) {
     return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
   }
+  if (type === "teams") {
+    return NextResponse.json(
+      { error: "Use PATCH /api/content/teams/:id for individual team updates" },
+      { status: 405 }
+    );
+  }
   try {
     const body = await request.json();
-    fs.writeFileSync(
-      contentFilePath(type),
-      JSON.stringify(body, null, 2)
-    );
+    fs.writeFileSync(contentFilePath(type), JSON.stringify(body, null, 2));
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to save" }, { status: 500 });

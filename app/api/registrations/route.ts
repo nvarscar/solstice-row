@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import { teamsFilePath } from "@/lib/teams-file";
+import { getDb } from "@/lib/db";
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || "1x0000000000000000000000000000000AA";
 
@@ -61,12 +60,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = JSON.parse(fs.readFileSync(teamsFilePath(), "utf-8"));
+    const db = getDb();
 
     const baseId = slugify(String(name));
     let id = baseId;
     let n = 1;
-    while (data.teams.some((t: { id: string }) => t.id === id)) {
+    while (db.prepare("SELECT id FROM teams WHERE id = ?").get(id)) {
       id = `${baseId}-${n++}`;
     }
 
@@ -86,8 +85,16 @@ export async function POST(request: NextRequest) {
       registeredAt: new Date().toISOString(),
     };
 
-    data.teams.push(newTeam);
-    fs.writeFileSync(teamsFilePath(), JSON.stringify(data, null, 2));
+    db.prepare(`
+      INSERT INTO teams
+        (id, name, captain, captainEmail, captainPhone, club, members, boatM, ergM,
+         pledgePerKm, notes, status, registeredAt)
+      VALUES
+        (@id, @name, @captain, @captainEmail, @captainPhone, @club, @members, @boatM, @ergM,
+         @pledgePerKm, @notes, @status, @registeredAt)
+    `).run(newTeam);
+
+    db.prepare("UPDATE meta SET value = ? WHERE key = 'lastUpdated'").run(new Date().toISOString());
 
     return NextResponse.json({ success: true, id });
   } catch (err) {

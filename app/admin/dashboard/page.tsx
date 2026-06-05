@@ -112,12 +112,20 @@ function Field({
 
 function TeamEditCard({
   team,
+  isDirty,
+  isSaving,
+  saveStatus,
+  onSave,
   onChange,
   onApprove,
   onRevoke,
   onDelete,
 }: {
   team: Team;
+  isDirty: boolean;
+  isSaving: boolean;
+  saveStatus: "ok" | "err" | null;
+  onSave: () => void;
   onChange: (field: keyof Team, value: string | number) => void;
   onApprove?: () => void;
   onRevoke?: () => void;
@@ -141,7 +149,7 @@ function TeamEditCard({
             Registered {new Date(team.registeredAt).toLocaleDateString()}
           </span>
         </div>
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex gap-1.5 flex-wrap items-center">
           {onApprove && (
             <button
               onClick={onApprove}
@@ -166,6 +174,28 @@ function TeamEditCard({
           >
             <Trash2 className="w-3 h-3" />
           </button>
+          {saveStatus === "ok" && (
+            <span className="flex items-center gap-1 text-xs text-green-400">
+              <CheckCircle className="w-3 h-3" />
+              Saved
+            </span>
+          )}
+          {saveStatus === "err" && (
+            <span className="flex items-center gap-1 text-xs text-red-400">
+              <AlertCircle className="w-3 h-3" />
+              Failed
+            </span>
+          )}
+          {isDirty && (
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className="flex items-center gap-1 px-3 py-1.5 bg-solstice-gold text-forest-950 text-xs font-bold rounded-lg hover:bg-solstice-gold-light disabled:opacity-50 transition-colors"
+            >
+              {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+              Save
+            </button>
+          )}
         </div>
       </div>
 
@@ -235,9 +265,25 @@ export default function DashboardPage() {
   });
   const [addDelta, setAddDelta] = useState<Record<string, { boatM: string; ergM: string }>>({});
   const [sortBy, setSortBy] = useState<"name" | "distance">("name");
-  const isDirtyRef = useRef(false);
-  const [isDirty, setIsDirtyState] = useState(false);
-  function setIsDirty(val: boolean) { isDirtyRef.current = val; setIsDirtyState(val); }
+  const dirtyRef = useRef(new Set<string>());
+  const [dirtyTeamIds, setDirtyTeamIdsState] = useState(new Set<string>());
+  const [savingTeamIds, setSavingTeamIds] = useState(new Set<string>());
+  const [teamSaveStatus, setTeamSaveStatus] = useState<Record<string, "ok" | "err">>({});
+
+  function markDirty(id: string) {
+    dirtyRef.current = new Set(dirtyRef.current).add(id);
+    setDirtyTeamIdsState(new Set(dirtyRef.current));
+  }
+  function clearDirty(id: string) {
+    const next = new Set(dirtyRef.current);
+    next.delete(id);
+    dirtyRef.current = next;
+    setDirtyTeamIdsState(new Set(next));
+  }
+  function clearAllDirty() {
+    dirtyRef.current = new Set();
+    setDirtyTeamIdsState(new Set());
+  }
 
   const [pwForm, setPwForm] = useState({
     currentPassword: "",
@@ -251,20 +297,31 @@ export default function DashboardPage() {
   });
 
   const loadTeams = useCallback(async () => {
-    if (isDirtyRef.current) {
-      if (!confirm("You have unsaved changes. Reload and lose them?")) return;
+    if (dirtyRef.current.size > 0) {
+      if (!confirm(`You have unsaved changes on ${dirtyRef.current.size} team(s). Reload and lose them?`)) return;
     }
     try {
       const res = await fetch("/api/content/teams");
       if (res.status === 401) { router.push("/admin/login"); return; }
       setTeamsData(await res.json());
-      setIsDirty(false);
+      clearAllDirty();
     } catch {
       setStatus({ msg: "Failed to load teams data", type: "err" });
     }
   }, [router]);
 
   useEffect(() => { loadTeams(); }, [loadTeams]);
+
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (dirtyRef.current.size > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   function updateMeters(id: string, field: "boatM" | "ergM", raw: string) {
     if (!teamsData) return;
@@ -275,7 +332,7 @@ export default function DashboardPage() {
         t.id === id ? { ...t, [field]: Math.max(0, val) } : t
       ),
     });
-    setIsDirty(true);
+    markDirty(id);
   }
 
   function addMeters(id: string, field: "boatM" | "ergM") {
@@ -289,7 +346,7 @@ export default function DashboardPage() {
       ),
     });
     setAddDelta((prev) => ({ ...prev, [id]: { ...prev[id], [field]: "" } }));
-    setIsDirty(true);
+    markDirty(id);
   }
 
   function updateTeamField(id: string, field: keyof Team, value: string | number) {
@@ -300,85 +357,95 @@ export default function DashboardPage() {
         t.id === id ? { ...t, [field]: value } : t
       ),
     });
-    setIsDirty(true);
+    markDirty(id);
   }
 
   async function approveTeam(id: string) {
-    if (!teamsData) return;
-    const updated: TeamsData = {
-      ...teamsData,
-      teams: teamsData.teams.map((t) =>
-        t.id === id ? { ...t, status: "approved" as const } : t
-      ),
-      lastUpdated: new Date().toISOString(),
-    };
-    setTeamsData(updated);
     try {
-      const res = await fetch("/api/content/teams", {
-        method: "PUT",
+      const res = await fetch(`/api/content/teams/${id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-      if (res.ok) { setIsDirty(false); }
-      else { setStatus({ msg: "Failed to save approval", type: "err" }); }
-    } catch {
-      setStatus({ msg: "Network error saving approval", type: "err" });
-    }
-  }
-
-  async function pendingTeam(id: string) {
-    if (!teamsData) return;
-    const updated: TeamsData = {
-      ...teamsData,
-      teams: teamsData.teams.map((t) =>
-        t.id === id ? { ...t, status: "pending" as const } : t
-      ),
-      lastUpdated: new Date().toISOString(),
-    };
-    setTeamsData(updated);
-    try {
-      const res = await fetch("/api/content/teams", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-      if (res.ok) { setIsDirty(false); }
-      else { setStatus({ msg: "Failed to save unapproval", type: "err" }); }
-    } catch {
-      setStatus({ msg: "Network error saving unapproval", type: "err" });
-    }
-  }
-
-  function deleteTeam(id: string) {
-    if (!teamsData) return;
-    if (!confirm("Delete this team? This cannot be undone.")) return;
-    setTeamsData({ ...teamsData, teams: teamsData.teams.filter((t) => t.id !== id) });
-    setIsDirty(true);
-  }
-
-  async function saveTeams() {
-    if (!teamsData) return;
-    setSaving(true);
-    setStatus({ msg: "", type: null });
-    try {
-      const payload = { ...teamsData, lastUpdated: new Date().toISOString() };
-      const res = await fetch("/api/content/teams", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ status: "approved" }),
       });
       if (res.ok) {
-        setTeamsData(payload);
-        setIsDirty(false);
-        setStatus({ msg: "Saved successfully!", type: "ok" });
+        setTeamsData((prev) =>
+          prev ? { ...prev, teams: prev.teams.map((t) => t.id === id ? { ...t, status: "approved" as const } : t) } : prev
+        );
       } else {
-        const d = await res.json();
-        setStatus({ msg: d.error || "Save failed", type: "err" });
+        setStatus({ msg: "Failed to approve team", type: "err" });
       }
     } catch {
       setStatus({ msg: "Network error", type: "err" });
     }
+  }
+
+  async function pendingTeam(id: string) {
+    try {
+      const res = await fetch(`/api/content/teams/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "pending" }),
+      });
+      if (res.ok) {
+        setTeamsData((prev) =>
+          prev ? { ...prev, teams: prev.teams.map((t) => t.id === id ? { ...t, status: "pending" as const } : t) } : prev
+        );
+      } else {
+        setStatus({ msg: "Failed to unapprove team", type: "err" });
+      }
+    } catch {
+      setStatus({ msg: "Network error", type: "err" });
+    }
+  }
+
+  async function deleteTeam(id: string) {
+    if (!confirm("Delete this team? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/content/teams/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setTeamsData((prev) =>
+          prev ? { ...prev, teams: prev.teams.filter((t) => t.id !== id) } : prev
+        );
+        clearDirty(id);
+      } else {
+        setStatus({ msg: "Failed to delete team", type: "err" });
+      }
+    } catch {
+      setStatus({ msg: "Network error deleting team", type: "err" });
+    }
+  }
+
+  async function saveTeam(id: string) {
+    if (!teamsData) return;
+    const team = teamsData.teams.find((t) => t.id === id);
+    if (!team) return;
+    setSavingTeamIds((prev) => new Set(prev).add(id));
+    try {
+      const res = await fetch(`/api/content/teams/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(team),
+      });
+      if (res.ok) {
+        clearDirty(id);
+        setTeamSaveStatus((prev) => ({ ...prev, [id]: "ok" }));
+        setTimeout(() => setTeamSaveStatus((prev) => { const next = { ...prev }; delete next[id]; return next; }), 2000);
+      } else {
+        setTeamSaveStatus((prev) => ({ ...prev, [id]: "err" }));
+      }
+    } catch {
+      setTeamSaveStatus((prev) => ({ ...prev, [id]: "err" }));
+    }
+    setSavingTeamIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+  }
+
+  async function saveAllDirty() {
+    if (dirtyRef.current.size === 0) return;
+    setSaving(true);
+    setStatus({ msg: "", type: null });
+    await Promise.all(Array.from(dirtyRef.current).map((id) => saveTeam(id)));
     setSaving(false);
+    if (dirtyRef.current.size === 0) setStatus({ msg: "All changes saved!", type: "ok" });
   }
 
   async function handleLogout() {
@@ -429,9 +496,9 @@ export default function DashboardPage() {
     ? teamsData.teams.filter((t) => t.status === "pending")
     : [];
 
-  const SaveBtn = ({ label }: { label: string }) => isDirty ? (
+  const SaveBtn = ({ label }: { label: string }) => dirtyTeamIds.size > 0 ? (
     <button
-      onClick={saveTeams}
+      onClick={saveAllDirty}
       disabled={saving}
       className="flex items-center gap-1.5 px-4 py-2 bg-solstice-gold text-forest-950 rounded-lg text-sm font-bold hover:bg-solstice-gold-light disabled:opacity-50 transition-colors"
     >
@@ -706,6 +773,10 @@ export default function DashboardPage() {
                         <TeamEditCard
                           key={team.id}
                           team={team}
+                          isDirty={dirtyTeamIds.has(team.id)}
+                          isSaving={savingTeamIds.has(team.id)}
+                          saveStatus={teamSaveStatus[team.id] ?? null}
+                          onSave={() => saveTeam(team.id)}
                           onChange={(field, value) => updateTeamField(team.id, field, value)}
                           onApprove={() => approveTeam(team.id)}
                           onDelete={() => deleteTeam(team.id)}
@@ -732,6 +803,10 @@ export default function DashboardPage() {
                         <TeamEditCard
                           key={team.id}
                           team={team}
+                          isDirty={dirtyTeamIds.has(team.id)}
+                          isSaving={savingTeamIds.has(team.id)}
+                          saveStatus={teamSaveStatus[team.id] ?? null}
+                          onSave={() => saveTeam(team.id)}
                           onChange={(field, value) => updateTeamField(team.id, field, value)}
                           onRevoke={() => pendingTeam(team.id)}
                           onDelete={() => deleteTeam(team.id)}
