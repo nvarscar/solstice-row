@@ -7,8 +7,8 @@ import { getCredentials, verifyToken } from "@/lib/auth";
 const CONTENT_DIR = path.join(process.cwd(), "content");
 const ALLOWED = ["event", "schedule", "teams", "sponsors"];
 
-function isAuthenticated(): boolean {
-  const cookieStore = cookies();
+async function isAuthenticated(): Promise<boolean> {
+  const cookieStore = await cookies();
   const token = cookieStore.get("solstice_auth")?.value;
   if (!token) return false;
   const creds = getCredentials();
@@ -18,9 +18,9 @@ function isAuthenticated(): boolean {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
-  const { type } = params;
+  const { type } = await params;
   if (!ALLOWED.includes(type)) {
     return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
   }
@@ -36,12 +36,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { type: string } }
+  { params }: { params: Promise<{ type: string }> }
 ) {
-  if (!isAuthenticated()) {
+  if (!(await isAuthenticated())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const { type } = params;
+  const { type } = await params;
   if (!ALLOWED.includes(type)) {
     return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
   }

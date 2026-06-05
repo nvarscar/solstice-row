@@ -1,0 +1,22 @@
+services:
+  web:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+      - solstice_data:/data
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - DATA_DIR=/data
+    stdin_open: true
+    tty: true
+
+volumes:
+  solstice_data:
+    driver: local

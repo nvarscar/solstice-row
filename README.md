@@ -1,10 +1,10 @@
 # Solstice Row — VCRC
 
-Website for the **Elk Lake Summer Solstice Row** hosted by Victoria City Rowing Club. Built with Next.js 14, TailwindCSS, and a custom password-protected admin panel for live event-day updates.
+Website for the **Elk Lake Summer Solstice Row** hosted by Victoria City Rowing Club. Built with Next.js 16, TailwindCSS, and a custom password-protected admin panel for live event-day updates.
 
 ## Stack
 
-- **Next.js 14** (App Router) + TypeScript + TailwindCSS
+- **Next.js 16** (App Router) + TypeScript + TailwindCSS
 - **Forest green + gold** colour scheme (`tailwind.config.ts`)
 - **Custom admin panel** at `/admin` — password auth, no third-party CMS
 - **Docker** — single-command start, persistent storage volume, no local Node.js required
@@ -17,11 +17,21 @@ Website for the **Elk Lake Summer Solstice Row** hosted by Victoria City Rowing 
 
 - Docker Desktop (or Docker Engine + Compose plugin)
 
-### Start
+### Development (local)
 
 ```bash
-docker compose up -d
+docker compose -f docker-compose.dev.yml up --build
 ```
+
+Hot-reload is enabled. The site is available at `http://localhost:3000`.
+
+### Production
+
+```bash
+docker compose up --build -d
+```
+
+Runs a compiled `next start` build behind nginx. Rebuild the image after any code change.
 
 On **first start** the container generates a random admin password and prints it to the logs:
 
@@ -46,8 +56,10 @@ The password is stored in the `solstice_data` Docker volume and **survives resta
 
 | URL | Description |
 |-----|-------------|
-| `http://localhost:3000` | Public website |
-| `http://localhost:3000/admin` | Admin panel (login required) |
+| `http://localhost:3000` | Public website (direct, dev only) |
+| `http://localhost:3000/admin` | Admin panel (direct, dev only) |
+| `http://solsticerow.nvarscar.ca` | Public website via nginx (redirects to HTTPS when certs present) |
+| `https://solsticerow.nvarscar.ca` | Public website via nginx + TLS |
 
 ### Stop
 
@@ -152,12 +164,19 @@ Edit `content/event.json`. Key fields:
 │   └── sponsors.json
 ├── lib/
 │   └── auth.ts                 # Password hashing, token creation, credential I/O
-├── middleware.ts               # Auth guard for /admin/* and /api/content/*
+├── proxy.ts                    # Auth guard for /admin/* and /api/content/* (Next.js 16 proxy convention)
+├── nginx/
+│   ├── docker-entrypoint.sh    # Detects certs, selects http-only or https config
+│   ├── http-only.conf          # nginx config — HTTP proxy to web:3000
+│   └── https.conf              # nginx config — TLS termination + HTTP→HTTPS redirect
 ├── scripts/
-│   └── init.sh                 # First-run password generation
+│   ├── init.sh                 # First-run password generation
+│   ├── issue-solsticerow.sh    # Let's Encrypt cert issuance (run from ~/certbot)
+│   └── renew-solsticerow.sh    # Let's Encrypt cert renewal  (run from ~/certbot)
 ├── tailwind.config.ts          # Colour theme (forest green + gold)
-├── docker-compose.yml
-└── Dockerfile
+├── docker-compose.yml          # Production
+├── docker-compose.dev.yml      # Development (hot-reload)
+└── Dockerfile                  # Multi-stage: dev / deps / builder / runner
 ```
 
 ---
@@ -195,10 +214,48 @@ The schedule supports these category tokens:
 ### Docker (Raspberry Pi / LAN server) — default
 
 ```bash
+docker compose up --build -d
+```
+
+The site runs as a compiled Next.js production server (`next start`) on port 3000. Content edits and credentials persist in the `solstice_data` volume. An nginx reverse proxy on ports 80/443 handles TLS termination (see [TLS](#tls) below).
+
+### TLS
+
+The nginx service auto-detects Let's Encrypt certificates at startup:
+
+- **Certs present** → nginx serves HTTPS on 443 and redirects port 80 → 443.
+- **Certs absent** → nginx serves plain HTTP on port 80.
+
+Certificates are expected at:
+
+```
+/etc/letsencrypt/live/solsticerow.nvarscar.ca/fullchain.pem
+/etc/letsencrypt/live/solsticerow.nvarscar.ca/privkey.pem
+```
+
+If your certbot stores certs elsewhere, set `LETSENCRYPT_DIR` before bringing the stack up:
+
+```bash
+export LETSENCRYPT_DIR=/home/user/certbot/conf
 docker compose up -d
 ```
 
-The site runs as a Next.js dev server on port 3000. Content edits and credentials persist in the `solstice_data` volume.
+#### Initial cert issuance
+
+Run from the `~/certbot` directory on the server (requires a certbot Docker Compose service already configured there):
+
+```bash
+bash /path/to/repo/scripts/issue-solsticerow.sh
+```
+
+This performs a manual DNS challenge for `solsticerow.nvarscar.ca`. After completing the DNS TXT record prompt, the certificate is saved and nginx will pick it up on the next `docker compose up` (or `docker compose restart nginx`).
+
+#### Renewal
+
+```bash
+bash /path/to/repo/scripts/renew-solsticerow.sh
+docker compose restart nginx
+```
 
 ### Netlify Static Export
 

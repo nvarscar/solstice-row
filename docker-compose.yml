@@ -4,16 +4,11 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
       - solstice_data:/data
     environment:
-      - NODE_ENV=development
-      - WATCHPACK_POLLING=true
+      - NODE_ENV=production
       - DATA_DIR=/data
-    stdin_open: true
-    tty: true
+    restart: unless-stopped
 
   nginx:
     image: nginx:alpine

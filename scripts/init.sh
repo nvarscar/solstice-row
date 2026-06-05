@@ -34,4 +34,8 @@ else
     echo "[solstice-row] Admin credentials loaded from persistent storage."
 fi
 
-exec npm run dev
+if [ "$NODE_ENV" = "production" ]; then
+    exec npm start
+else
+    exec npm run dev
+fi

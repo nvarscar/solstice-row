@@ -1,8 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+@config "../tailwind.config.ts";
 
 /*
   CSS custom properties — space-separated RGB channels so they can be
@@ -23,12 +21,6 @@
 
   /* Water palette */
   --water-light: 74 222 128;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
 }
 
 html {
