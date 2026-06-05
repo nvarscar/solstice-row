@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Calendar, MapPin, Sunrise, Sunset, ChevronDown } from "lucide-react";
 
 interface HeroProps {
@@ -52,7 +53,17 @@ export default function Hero({
         </svg>
       </div>
 
-      <div className="relative z-10 text-center px-4 sm:px-6 max-w-5xl mx-auto pt-24">
+      <div className="relative z-10 text-center px-4 sm:px-6 max-w-5xl mx-auto pt-8">
+        <div className="flex justify-center mb-3 animate-fade-up">
+          <Image
+            src="/sr-logo.png"
+            alt="Solstice Row logo"
+            width={240}
+            height={240}
+            priority
+            className="rounded-full"
+          />
+        </div>
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-solstice-gold/30 text-sm text-solstice-gold mb-8 animate-fade-up">
           <span className="w-2 h-2 rounded-full bg-solstice-gold animate-pulse" />
           {venue} · {edition}
