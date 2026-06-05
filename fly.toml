@@ -1,35 +1,32 @@
 # Fly.io configuration for Solstice Row
-# 1. Create the app: fly apps create solstice-row
-# 2. Create the volume: fly volumes create data --region yyz --size 1 --app solstice-row
-# 3. Add the custom domain: fly certs add solsticerow.ca
-# 4. Deploy: fly deploy
+#
+# First-time setup:
+#   1. fly apps create solstice-row
+#   2. fly volumes create data --region yyz --size 1 --app solstice-row
+#   3. fly secrets set TURNSTILE_SITE_KEY=<your_site_key> TURNSTILE_SECRET_KEY=<your_secret_key>
+#   4. fly deploy
+#   5. fly certs add solsticerow.ca  (then point DNS A/AAAA to the IP shown)
 
 app = "solstice-row"
 primary_region = "yyz"
 
 [build]
-  dockerfile = "Dockerfile"
+  build-target = "runner"
 
 [env]
   NODE_ENV = "production"
   DATA_DIR = "/data"
+  NEXT_PUBLIC_SITE_URL = "https://solsticerow.ca"
+  # TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY are set via: fly secrets set ...
 
-[[services]]
+[http_service]
   internal_port = 3000
+  force_https = true
   auto_stop_machines = "off"
   auto_start_machines = true
   min_machines_running = 1
-  processes = ["app"]
 
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
-
-  [[services.ports]]
-    handlers = ["http"]
-    port = 80
-
-[[mounts]]
+[mounts]
   source = "data"
   destination = "/data"
   initial_size = "1GB"
