@@ -8,7 +8,13 @@ services:
     environment:
       - NODE_ENV=production
       - DATA_DIR=/data
+      # Set these in a .env file or export them before running docker compose
+      # Get free keys at https://cloudflare.com/turnstile
+      - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+      - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY:-}
     restart: unless-stopped
+    env_file:
+      - .env
 
   nginx:
     image: nginx:alpine
@@ -19,7 +25,7 @@ services:
       - ./nginx/http-only.conf:/etc/nginx/templates/http-only.conf:ro
       - ./nginx/https.conf:/etc/nginx/templates/https.conf:ro
       - ./nginx/docker-entrypoint.sh:/etc/nginx/docker-entrypoint.sh:ro
-      # Set LETSENCRYPT_DIR to your certbot conf path, e.g. /home/user/certbot/conf
+      # Set LETSENCRYPT_DIR in .env or defaults to /etc/letsencrypt
       - ${LETSENCRYPT_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
     entrypoint: ["/bin/sh", "/etc/nginx/docker-entrypoint.sh"]
     depends_on:

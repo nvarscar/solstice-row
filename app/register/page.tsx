@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Waves, CheckCircle, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 
 interface FormData {
   name: string;
@@ -12,6 +13,7 @@ interface FormData {
   members: string;
   pledgePerKm: string;
   notes: string;
+  turnstileToken: string;
 }
 
 const INITIAL: FormData = {
@@ -23,7 +25,10 @@ const INITIAL: FormData = {
   members: "1",
   pledgePerKm: "",
   notes: "",
+  turnstileToken: "",
 };
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
 
 const inputClass =
   "w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-solstice-gold/50 focus:border-solstice-gold/50 transition-all";
@@ -34,6 +39,7 @@ export default function RegisterPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedName, setSubmittedName] = useState("");
   const [error, setError] = useState("");
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   function set(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -42,6 +48,10 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.turnstileToken) {
+      setError("Please complete the CAPTCHA verification.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -57,6 +67,7 @@ export default function RegisterPage() {
           members: parseInt(form.members) || 1,
           pledgePerKm: parseFloat(form.pledgePerKm) || 0,
           notes: form.notes,
+          turnstileToken: form.turnstileToken,
         }),
       });
       if (res.ok) {
@@ -65,9 +76,13 @@ export default function RegisterPage() {
       } else {
         const d = await res.json();
         setError(d.error || "Registration failed. Please try again.");
+        turnstileRef.current?.reset();
+        setForm((prev) => ({ ...prev, turnstileToken: "" }));
       }
     } catch {
       setError("Network error. Please try again.");
+      turnstileRef.current?.reset();
+      setForm((prev) => ({ ...prev, turnstileToken: "" }));
     }
     setSubmitting(false);
   }
@@ -260,6 +275,26 @@ export default function RegisterPage() {
                   placeholder="Any questions or special requests for the organizers…"
                   rows={3}
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-solstice-gold/50 focus:border-solstice-gold/50 transition-all resize-none"
+                />
+              </div>
+
+              {/* CAPTCHA */}
+              <div className="flex justify-center">
+                <Turnstile
+                  ref={turnstileRef}
+                  siteKey={TURNSTILE_SITE_KEY}
+                  onSuccess={(token) => set("turnstileToken", token)}
+                  onError={() => {
+                    setError("CAPTCHA verification failed. Please try again.");
+                    setForm((prev) => ({ ...prev, turnstileToken: "" }));
+                  }}
+                  onExpire={() => {
+                    setForm((prev) => ({ ...prev, turnstileToken: "" }));
+                  }}
+                  options={{
+                    theme: "dark",
+                    size: "normal",
+                  }}
                 />
               </div>
 

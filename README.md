@@ -58,8 +58,6 @@ The password is stored in the `solstice_data` Docker volume and **survives resta
 |-----|-------------|
 | `http://localhost:3000` | Public website (direct, dev only) |
 | `http://localhost:3000/admin` | Admin panel (direct, dev only) |
-| `http://solsticerow.nvarscar.ca` | Public website via nginx (redirects to HTTPS when certs present) |
-| `https://solsticerow.nvarscar.ca` | Public website via nginx + TLS |
 
 ### Stop
 
@@ -213,13 +211,105 @@ The schedule supports these category tokens:
 
 ## Deployment
 
-### Docker (Raspberry Pi / LAN server) — default
+### Linux / ARM Server Deployment
+
+The project uses multi-arch Docker images (`node:lts-alpine`, `nginx:alpine`) that support both AMD64 and ARM64 (including Raspberry Pi 4/5, AWS Graviton, etc.) out of the box. No special configuration needed for ARM servers.
+
+#### First-Time Setup on Linux
+
+1. **SSH into your server** (or work directly on it):
+   ```bash
+   ssh user@your-server-ip
+   ```
+
+2. **Install Docker & Docker Compose** (if not already installed):
+   ```bash
+   # Update system (Debian/Ubuntu/Raspberry Pi OS)
+   sudo apt update && sudo apt upgrade -y
+   
+   # Install Docker
+   curl -fsSL https://get.docker.com -o get-docker.sh
+   sudo sh get-docker.sh
+   
+   # Add your user to docker group (log out and back in after this)
+   sudo usermod -aG docker $USER
+   
+   # Docker Compose is included with Docker Desktop/Engine 24.0+
+   docker compose version  # verify installation
+   ```
+
+3. **Clone the repository** (or copy files via SCP/rsync):
+   ```bash
+   git clone <your-repo-url> ~/solstice-row
+   cd ~/solstice-row
+   ```
+
+4. **Configure environment variables** (optional but recommended):
+
+   Create a `.env` file in the project root:
+   ```bash
+   # For CAPTCHA protection (get free keys at https://cloudflare.com/turnstile)
+   NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAA...
+   TURNSTILE_SECRET_KEY=0x4AAAA...
+   
+   # For custom domain TLS certificates (if using Let's Encrypt)
+   LETSENCRYPT_DIR=/home/user/certbot/conf
+   ```
+   
+   Docker Compose automatically reads `.env` on startup. No `export` needed.
+
+5. **Build and start the services**:
+   ```bash
+   docker compose up --build -d
+   ```
+
+6. **Get the admin password** from logs:
+   ```bash
+   docker compose logs web | grep -A 5 "ADMIN CREDENTIALS"
+   ```
+
+7. **Access the site**:
+   - LAN access: `http://your-server-ip:3000` (direct) or `http://your-server-ip` (via nginx)
+   - From the server itself: `http://localhost:3000`
+
+#### Updating the Site (New Code Deploy)
+
+When you have new code to deploy:
 
 ```bash
+cd ~/solstice-row
+
+# Pull latest changes (if using git)
+git pull
+
+# Or copy new files via SCP from your dev machine:
+# scp -r ./ user@your-server-ip:~/solstice-row/
+
+# Rebuild and restart
 docker compose up --build -d
+
+# View logs to confirm admin password (only changes if you wiped the volume)
+docker compose logs web | tail -20
 ```
 
-The site runs as a compiled Next.js production server (`next start`) on port 3000. Content edits and credentials persist in the `solstice_data` volume. An nginx reverse proxy on ports 80/443 handles TLS termination (see [TLS](#tls) below).
+> **Data persists**: Team registrations and admin password survive rebuilds because they live in the `solstice_data` Docker volume, not in the image.
+
+#### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Slow builds (ARM/RPi) | First build takes 5-10 min on Raspberry Pi 4 (compiling Node modules). Subsequent builds use Docker layer cache. AMD64 servers are faster. |
+| Build fails with memory error (RPi) | Add swap: `sudo dphys-swapfile swapoff && sudo nano /etc/dphys-swapfile` → set `CONF_SWAPSIZE=2048` → `sudo dphys-swapfile setup && sudo dphys-swapfile swapon` |
+| Port 80/443 already in use | Stop other web servers: `sudo systemctl stop apache2` or `sudo systemctl stop nginx` |
+| DNS not working in container | Add to `/etc/docker/daemon.json`: `"dns": ["8.8.8.8", "1.1.1.1"]` then `sudo systemctl restart docker` |
+
+#### Auto-Start on Boot
+
+Docker Compose services already have `restart: unless-stopped`, but to ensure Docker starts on boot:
+
+```bash
+sudo systemctl enable docker
+```
 
 ### TLS
 
@@ -231,8 +321,8 @@ The nginx service auto-detects Let's Encrypt certificates at startup:
 Certificates are expected at:
 
 ```
-/etc/letsencrypt/live/solsticerow.nvarscar.ca/fullchain.pem
-/etc/letsencrypt/live/solsticerow.nvarscar.ca/privkey.pem
+/etc/letsencrypt/live/solsticerow.foo.bar/fullchain.pem
+/etc/letsencrypt/live/solsticerow.foo.bar/privkey.pem
 ```
 
 If your certbot stores certs elsewhere, set `LETSENCRYPT_DIR` before bringing the stack up:
@@ -250,7 +340,7 @@ Run from the `~/certbot` directory on the server (requires a certbot Docker Comp
 bash /path/to/repo/scripts/issue-solsticerow.sh
 ```
 
-This performs a manual DNS challenge for `solsticerow.nvarscar.ca`. After completing the DNS TXT record prompt, the certificate is saved and nginx will pick it up on the next `docker compose up` (or `docker compose restart nginx`).
+This performs a manual DNS challenge for `solsticerow.foo.bar`. After completing the DNS TXT record prompt, the certificate is saved and nginx will pick it up on the next `docker compose up` (or `docker compose restart nginx`).
 
 #### Renewal
 
@@ -293,6 +383,41 @@ docker compose exec web cat /data/teams.json > teams-backup-$(date +%Y%m%d).json
 ```bash
 docker cp teams-backup-20260721.json $(docker compose ps -q web):/data/teams.json
 ```
+
+---
+
+## CAPTCHA (Bot Protection)
+
+The registration page includes **Cloudflare Turnstile** CAPTCHA to prevent bot submissions.
+
+### Development
+
+The site uses test keys that always pass verification (no Cloudflare account needed):
+- Site key: `1x00000000000000000000AA` (visible CAPTCHA)
+- Secret key: `1x0000000000000000000000000000000AA`
+
+### Production Setup
+
+1. Create a free account at [cloudflare.com/turnstile](https://www.cloudflare.com/turnstile/)
+2. Add your domain (e.g., `solsticerow.foo.bar`)
+3. Copy the **Site Key** and **Secret Key** from the Turnstile dashboard
+4. Set environment variables in `docker-compose.yml`:
+
+```yaml
+services:
+  web:
+    environment:
+      - NEXT_PUBLIC_TURNSTILE_SITE_KEY=your-actual-site-key
+      - TURNSTILE_SECRET_KEY=your-actual-secret-key
+```
+
+Or pass them at runtime:
+
+```bash
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAA... TURNSTILE_SECRET_KEY=0x4AAAA... docker compose up -d
+```
+
+> **Note:** `NEXT_PUBLIC_` prefix is required for the site key to be available in the browser. The secret key stays server-side only.
 
 ---
 

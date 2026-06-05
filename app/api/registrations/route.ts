@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import { teamsFilePath } from "@/lib/teams-file";
 
+const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || "1x0000000000000000000000000000000AA";
+
 function slugify(name: string): string {
   return name
     .toLowerCase()
@@ -10,14 +12,51 @@ function slugify(name: string): string {
     .slice(0, 48);
 }
 
+async function verifyTurnstileToken(token: string): Promise<boolean> {
+  const formData = new URLSearchParams();
+  formData.append("secret", TURNSTILE_SECRET_KEY);
+  formData.append("response", token);
+
+  try {
+    const result = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: formData,
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+
+    const outcome = await result.json();
+    return outcome.success === true;
+  } catch (err) {
+    console.error("Turnstile verification error:", err);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, captain, captainEmail, members } = body;
+    const { name, captain, captainEmail, members, turnstileToken } = body;
 
     if (!name?.trim() || !captain?.trim() || !captainEmail?.trim() || !members) {
       return NextResponse.json(
         { error: "Missing required fields: name, captain, captainEmail, members" },
+        { status: 400 }
+      );
+    }
+
+    if (!turnstileToken) {
+      return NextResponse.json(
+        { error: "CAPTCHA verification required. Please complete the challenge." },
+        { status: 400 }
+      );
+    }
+
+    const isValidToken = await verifyTurnstileToken(turnstileToken);
+    if (!isValidToken) {
+      return NextResponse.json(
+        { error: "CAPTCHA verification failed. Please try again." },
         { status: 400 }
       );
     }
