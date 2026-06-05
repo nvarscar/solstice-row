@@ -67,7 +67,7 @@ export default function About({ description, cause, format }: AboutProps) {
 
         <div className="card-glass rounded-2xl p-6 mb-10">
           <h3 className="text-solstice-gold font-semibold text-sm uppercase tracking-widest mb-3">
-            Your Cause
+            Our Cause
           </h3>
           <p className="text-forest-200 leading-relaxed">{cause}</p>
         </div>

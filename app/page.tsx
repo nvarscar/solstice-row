@@ -51,7 +51,7 @@ export default function Home() {
         format={eventData.format}
       />
 
-      <Schedule items={scheduleData.items} />
+      <Schedule items={scheduleData.items} date={eventData.date} />
 
       <Results teamsData={teamsData} />
 

@@ -9,6 +9,7 @@ interface ScheduleItem {
 
 interface ScheduleProps {
   items: ScheduleItem[];
+  date?: string;
 }
 
 const categoryColors: Record<string, string> = {
@@ -27,13 +28,13 @@ const categoryDots: Record<string, string> = {
   race:      "bg-solstice-gold",
 };
 
-export default function Schedule({ items }: ScheduleProps) {
+export default function Schedule({ items, date }: ScheduleProps) {
   return (
     <section id="schedule" className="py-24 px-4 sm:px-6 relative">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
           <span className="text-solstice-gold text-sm font-semibold uppercase tracking-widest">
-            Day Of
+            {date ?? "Day Of"}
           </span>
           <h2 className="text-4xl sm:text-5xl font-bold text-white mt-3">
             Event Schedule
