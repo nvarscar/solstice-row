@@ -43,14 +43,19 @@ export default function Contact({
             <p className="text-forest-300 text-sm break-all">{contactEmail}</p>
           </a>
 
-          <div className="card-glass rounded-2xl p-6 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-solstice-gold/20 mb-4">
+          <a
+            href="https://maps.app.goo.gl/wNQwqJrpBhdZGhCQ7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card-glass rounded-2xl p-6 text-center hover:bg-white/10 transition-colors group"
+          >
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-solstice-gold/20 mb-4 group-hover:bg-solstice-gold/30 transition-colors">
               <MapPin className="w-6 h-6 text-solstice-gold" />
             </div>
             <h3 className="text-white font-semibold mb-1">Venue</h3>
             <p className="text-forest-300 text-sm">{location}</p>
             <p className="text-forest-400 text-xs mt-1">{address}</p>
-          </div>
+          </a>
 
           <a
             href={donationUrl}
