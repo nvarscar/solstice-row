@@ -17,8 +17,11 @@ import {
   RotateCcw,
   Calendar,
   Plus,
+  Star,
+  ChevronDown,
 } from "lucide-react";
 import clsx from "clsx";
+import { TIER_COLORS } from "@/lib/sponsor-colors";
 
 interface Team {
   id: string;
@@ -50,7 +53,19 @@ interface ScheduleItem {
   category: string;
 }
 
-type Tab = "leaderboard" | "teams" | "schedule" | "password";
+interface Sponsor {
+  name: string;
+  url: string;
+  logo: string;
+}
+
+interface SponsorTier {
+  name: string;
+  color: string;
+  sponsors: Sponsor[];
+}
+
+type Tab = "leaderboard" | "teams" | "schedule" | "sponsors" | "password";
 
 function StatusBadge({ msg, type }: { msg: string; type: "ok" | "err" | null }) {
   if (!msg) return null;
@@ -271,6 +286,124 @@ function TeamEditCard({
   );
 }
 
+function TierColorSelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClick);
+      return () => document.removeEventListener("mousedown", handleClick);
+    }
+  }, [open]);
+
+  const selected = TIER_COLORS.find((c) => c.id === value) ?? TIER_COLORS[1];
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-2 px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg text-white text-sm hover:bg-white/15 transition-colors"
+      >
+        <span className={clsx("w-3.5 h-3.5 rounded-sm flex-shrink-0", selected.swatch)} />
+        <span>{selected.label}</span>
+        <ChevronDown className={clsx("w-3.5 h-3.5 text-forest-400 ml-0.5 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 card-glass border border-white/20 rounded-lg overflow-hidden shadow-xl py-1 min-w-[120px]">
+          {TIER_COLORS.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => { onChange(c.id); setOpen(false); }}
+              className={clsx(
+                "w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors",
+                value === c.id
+                  ? "bg-white/15 text-white"
+                  : "text-forest-200 hover:bg-white/10"
+              )}
+            >
+              <span className={clsx("w-3.5 h-3.5 rounded-sm flex-shrink-0", c.swatch)} />
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SponsorCard({
+  sponsor,
+  onChange,
+  onDelete,
+}: {
+  sponsor: Sponsor;
+  onChange: (field: keyof Sponsor, value: string) => void;
+  onDelete: () => void;
+}) {
+  const inputCls =
+    "w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-solstice-gold/50";
+  return (
+    <div className="card-glass rounded-xl p-3">
+      <div className="flex gap-3">
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="sm:col-span-2">
+            <label className="block text-xs text-forest-300 mb-1">
+              Name<span className="text-red-400 ml-0.5">*</span>
+            </label>
+            <input
+              type="text"
+              value={sponsor.name}
+              onChange={(e) => onChange("name", e.target.value)}
+              placeholder="Sponsor name"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-forest-300 mb-1">URL</label>
+            <input
+              type="url"
+              value={sponsor.url}
+              onChange={(e) => onChange("url", e.target.value)}
+              placeholder="https://"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-forest-300 mb-1">Logo URL</label>
+            <input
+              type="url"
+              value={sponsor.logo}
+              onChange={(e) => onChange("logo", e.target.value)}
+              placeholder="https://… (optional)"
+              className={inputCls}
+            />
+          </div>
+        </div>
+        <div className="flex-shrink-0 pt-5">
+          <button
+            onClick={onDelete}
+            className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const SCHEDULE_CATEGORIES = ["row", "milestone", "logistics", "social", "race"] as const;
 
 function ScheduleItemCard({
@@ -373,6 +506,12 @@ export default function DashboardPage() {
   const [scheduleDirty, setScheduleDirty] = useState(false);
   const [scheduleStatus, setScheduleStatus] = useState<{ msg: string; type: "ok" | "err" | null }>({ msg: "", type: null });
 
+  const [sponsorTiers, setSponsorTiers] = useState<SponsorTier[]>([]);
+  const [sponsorsLoaded, setSponsorsLoaded] = useState(false);
+  const [sponsorsSaving, setSponsorsSaving] = useState(false);
+  const [sponsorsDirty, setSponsorsDirty] = useState(false);
+  const [sponsorsStatus, setSponsorsStatus] = useState<{ msg: string; type: "ok" | "err" | null }>({ msg: "", type: null });
+
   function markDirty(id: string) {
     dirtyRef.current = new Set(dirtyRef.current).add(id);
     setDirtyTeamIdsState(new Set(dirtyRef.current));
@@ -429,11 +568,28 @@ export default function DashboardPage() {
     }
   }, [router]);
 
+  const loadSponsors = useCallback(async () => {
+    try {
+      const res = await fetch("/api/content/sponsors");
+      if (res.status === 401) { router.push("/admin/login"); return; }
+      const data = await res.json();
+      setSponsorTiers(data.tiers ?? []);
+      setSponsorsLoaded(true);
+      setSponsorsDirty(false);
+    } catch {
+      setSponsorsStatus({ msg: "Failed to load sponsors", type: "err" });
+    }
+  }, [router]);
+
   useEffect(() => { loadTeams(); }, [loadTeams]);
 
   useEffect(() => {
     if (tab === "schedule" && !scheduleLoaded) loadSchedule();
   }, [tab, scheduleLoaded, loadSchedule]);
+
+  useEffect(() => {
+    if (tab === "sponsors" && !sponsorsLoaded) loadSponsors();
+  }, [tab, sponsorsLoaded, loadSponsors]);
 
   useEffect(() => { setStatus({ msg: "", type: null }); }, [tab]);
 
@@ -629,6 +785,30 @@ export default function DashboardPage() {
     setPwSaving(false);
   }
 
+  async function handleSaveSponsors() {
+    setSponsorsSaving(true);
+    setSponsorsStatus({ msg: "", type: null });
+    try {
+      const res = await fetch("/api/content/sponsors", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tiers: sponsorTiers }),
+      });
+      if (!res.ok) {
+        setSponsorsStatus({ msg: "Failed to save sponsors", type: "err" });
+      } else {
+        const data = await res.json();
+        setSponsorTiers(data.tiers ?? sponsorTiers);
+        setSponsorsDirty(false);
+        setSponsorsStatus({ msg: "Sponsors saved!", type: "ok" });
+        setTimeout(() => setSponsorsStatus({ msg: "", type: null }), 3000);
+      }
+    } catch {
+      setSponsorsStatus({ msg: "Network error", type: "err" });
+    }
+    setSponsorsSaving(false);
+  }
+
   async function saveSchedule() {
     setScheduleSaving(true);
     setScheduleStatus({ msg: "", type: null });
@@ -729,6 +909,7 @@ export default function DashboardPage() {
                 icon: ClipboardList,
               },
               { id: "schedule", label: "Schedule", icon: Calendar },
+              { id: "sponsors", label: "Sponsors", icon: Star },
               { id: "password", label: "Change Password", icon: Key },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
@@ -1066,6 +1247,148 @@ export default function DashboardPage() {
 
                 <p className="text-forest-500 text-xs text-center">
                   Events are automatically sorted by start time when saved.
+                </p>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Sponsors Tab ── */}
+        {tab === "sponsors" && (
+          <div className="space-y-6">
+            <div className="flex items-start justify-between gap-2 flex-wrap">
+              <div>
+                <h2 className="text-white text-xl font-bold">Sponsors</h2>
+                <p className="text-forest-400 text-xs mt-0.5">
+                  {sponsorTiers.reduce((n, t) => n + t.sponsors.length, 0)} sponsor
+                  {sponsorTiers.reduce((n, t) => n + t.sponsors.length, 0) !== 1 ? "s" : ""} across{" "}
+                  {sponsorTiers.length} tier{sponsorTiers.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => { setSponsorsLoaded(false); loadSponsors(); }}
+                  className="flex items-center gap-1.5 px-3 py-2 card-glass rounded-lg text-forest-200 text-sm hover:bg-white/10 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reload
+                </button>
+                {sponsorsDirty && (
+                  <button
+                    onClick={handleSaveSponsors}
+                    disabled={sponsorsSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-solstice-gold text-forest-950 rounded-lg text-sm font-bold hover:bg-solstice-gold-light disabled:opacity-50 transition-colors"
+                  >
+                    {sponsorsSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Sponsors
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {sponsorsStatus.msg && <StatusBadge msg={sponsorsStatus.msg} type={sponsorsStatus.type} />}
+
+            {!sponsorsLoaded ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-forest-400" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-8">
+                  {sponsorTiers.map((tier, ti) => (
+                    <div key={ti} className="space-y-3">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <input
+                          type="text"
+                          value={tier.name}
+                          onChange={(e) => {
+                            const next = [...sponsorTiers];
+                            next[ti] = { ...next[ti], name: e.target.value };
+                            setSponsorTiers(next);
+                            setSponsorsDirty(true);
+                          }}
+                          placeholder="Tier name (e.g. Gold)"
+                          className="flex-1 min-w-[140px] bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm font-semibold placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-solstice-gold/50"
+                        />
+                        <TierColorSelect
+                          value={tier.color}
+                          onChange={(id) => {
+                            const next = [...sponsorTiers];
+                            next[ti] = { ...next[ti], color: id };
+                            setSponsorTiers(next);
+                            setSponsorsDirty(true);
+                          }}
+                        />
+                        <span className="text-forest-400 text-xs whitespace-nowrap">
+                          {tier.sponsors.length} sponsor{tier.sponsors.length !== 1 ? "s" : ""}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setSponsorTiers(sponsorTiers.filter((_, i) => i !== ti));
+                            setSponsorsDirty(true);
+                          }}
+                          className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="space-y-2 pl-2">
+                        {tier.sponsors.map((sponsor, si) => (
+                          <SponsorCard
+                            key={si}
+                            sponsor={sponsor}
+                            onChange={(field, value) => {
+                              const next = [...sponsorTiers];
+                              const newSponsors = [...next[ti].sponsors];
+                              newSponsors[si] = { ...newSponsors[si], [field]: value };
+                              next[ti] = { ...next[ti], sponsors: newSponsors };
+                              setSponsorTiers(next);
+                              setSponsorsDirty(true);
+                            }}
+                            onDelete={() => {
+                              const next = [...sponsorTiers];
+                              next[ti] = {
+                                ...next[ti],
+                                sponsors: next[ti].sponsors.filter((_, i) => i !== si),
+                              };
+                              setSponsorTiers(next);
+                              setSponsorsDirty(true);
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => {
+                          const next = [...sponsorTiers];
+                          next[ti] = {
+                            ...next[ti],
+                            sponsors: [...next[ti].sponsors, { name: "", url: "", logo: "" }],
+                          };
+                          setSponsorTiers(next);
+                          setSponsorsDirty(true);
+                        }}
+                        className="w-full py-2 card-glass rounded-xl border border-dashed border-white/20 text-forest-300 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-sm"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Sponsor to {tier.name || "Tier"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setSponsorTiers([...sponsorTiers, { name: "", color: "silver", sponsors: [] }]);
+                    setSponsorsDirty(true);
+                  }}
+                  className="w-full py-3 card-glass rounded-xl border border-dashed border-white/20 text-forest-300 hover:text-white hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Tier
+                </button>
+
+                <p className="text-forest-500 text-xs text-center">
+                  Tiers and sponsors appear in the order listed here.
                 </p>
               </>
             )}

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import fs from "fs";
 import path from "path";
 import { getCredentials, verifyToken } from "@/lib/auth";
-import { getDb, getAllTeams, getAllScheduleItems, saveScheduleItems } from "@/lib/db";
+import { getDb, getAllTeams, getAllScheduleItems, saveScheduleItems, getAllSponsors, saveSponsors } from "@/lib/db";
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
 const ALLOWED = ["event", "schedule", "teams", "sponsors"];
@@ -45,6 +45,14 @@ export async function GET(
       return NextResponse.json({ error: "Failed to load schedule" }, { status: 500 });
     }
   }
+  if (type === "sponsors") {
+    try {
+      return NextResponse.json(getAllSponsors(getDb()));
+    } catch (err) {
+      console.error("Failed to load sponsors from DB:", err);
+      return NextResponse.json({ error: "Failed to load sponsors" }, { status: 500 });
+    }
+  }
   try {
     const data = JSON.parse(fs.readFileSync(contentFilePath(type), "utf-8"));
     return NextResponse.json(data);
@@ -80,6 +88,18 @@ export async function PUT(
       return NextResponse.json({ items: sorted });
     } catch {
       return NextResponse.json({ error: "Failed to save schedule" }, { status: 500 });
+    }
+  }
+  if (type === "sponsors") {
+    try {
+      const body = await request.json();
+      if (!Array.isArray(body.tiers)) {
+        return NextResponse.json({ error: "Invalid sponsors data" }, { status: 400 });
+      }
+      const result = saveSponsors(getDb(), body.tiers);
+      return NextResponse.json(result);
+    } catch {
+      return NextResponse.json({ error: "Failed to save sponsors" }, { status: 500 });
     }
   }
   try {

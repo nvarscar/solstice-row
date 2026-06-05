@@ -1,4 +1,5 @@
 import { ExternalLink } from "lucide-react";
+import { getTierBadgeClass } from "@/lib/sponsor-colors";
 
 interface Sponsor {
   name: string;
@@ -8,18 +9,13 @@ interface Sponsor {
 
 interface SponsorTier {
   name: string;
+  color: string;
   sponsors: Sponsor[];
 }
 
 interface SponsorsProps {
   tiers: SponsorTier[];
 }
-
-const tierStyles: Record<string, string> = {
-  Gold: "text-solstice-gold border-solstice-gold/40 bg-solstice-gold/10",
-  Silver: "text-slate-300 border-slate-400/40 bg-slate-400/10",
-  Bronze: "text-amber-600 border-amber-700/40 bg-amber-700/10",
-};
 
 export default function Sponsors({ tiers }: SponsorsProps) {
   return (
@@ -44,8 +40,7 @@ export default function Sponsors({ tiers }: SponsorsProps) {
               <div className="flex items-center gap-4 mb-6">
                 <span
                   className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
-                    tierStyles[tier.name] ??
-                    "text-forest-300 border-forest-400/30 bg-forest-400/10"
+                    getTierBadgeClass(tier.color)
                   }`}
                 >
                   {tier.name}

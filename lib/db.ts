@@ -32,6 +32,18 @@ export interface ScheduleItem {
   category: string;
 }
 
+export interface Sponsor {
+  name: string;
+  url: string;
+  logo: string;
+}
+
+export interface SponsorTier {
+  name: string;
+  color: string;
+  sponsors: Sponsor[];
+}
+
 function parseScheduleMinutes(t: string): number {
   const m = t.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
   if (!m) return 0;
@@ -73,6 +85,20 @@ function initSchema(db: Database.Database): void {
       description  TEXT NOT NULL DEFAULT '',
       category     TEXT NOT NULL DEFAULT 'row'
     );
+    CREATE TABLE IF NOT EXISTS sponsor_tiers (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      name       TEXT NOT NULL,
+      color      TEXT NOT NULL DEFAULT 'silver'
+    );
+    CREATE TABLE IF NOT EXISTS sponsors (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      tier_id    INTEGER NOT NULL REFERENCES sponsor_tiers(id),
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      name       TEXT NOT NULL DEFAULT '',
+      url        TEXT NOT NULL DEFAULT '',
+      logo       TEXT NOT NULL DEFAULT ''
+    );
     CREATE TABLE IF NOT EXISTS teams (
       id           TEXT PRIMARY KEY,
       name         TEXT NOT NULL,
@@ -89,6 +115,14 @@ function initSchema(db: Database.Database): void {
       registeredAt TEXT NOT NULL
     );
   `);
+
+  try {
+    db.exec("ALTER TABLE sponsor_tiers ADD COLUMN color TEXT NOT NULL DEFAULT 'silver'");
+    db.exec("UPDATE sponsor_tiers SET color = 'gold' WHERE LOWER(name) = 'gold'");
+    db.exec("UPDATE sponsor_tiers SET color = 'bronze' WHERE LOWER(name) = 'bronze'");
+  } catch {
+    // column already exists – nothing to do
+  }
 
   const insertMeta = db.prepare("INSERT OR IGNORE INTO meta (key, value) VALUES (?, ?)");
   insertMeta.run("eventYear", new Date().getFullYear().toString());
@@ -116,6 +150,36 @@ function initSchema(db: Database.Database): void {
         }
       } catch {
         // seeding failed; continue with empty schedule
+      }
+    }
+  }
+
+  const { stc } = db.prepare("SELECT COUNT(*) as stc FROM sponsor_tiers").get() as { stc: number };
+  if (stc === 0) {
+    const sponsorsJsonPath = path.join(process.cwd(), "content", "sponsors.json");
+    if (fs.existsSync(sponsorsJsonPath)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(sponsorsJsonPath, "utf-8")) as { tiers: SponsorTier[] };
+        if (Array.isArray(raw.tiers)) {
+          const insertTier = db.prepare(
+            "INSERT INTO sponsor_tiers (name, color, sort_order) VALUES (@name, @color, @sort_order)"
+          );
+          const insertSponsor = db.prepare(
+            "INSERT INTO sponsors (tier_id, name, url, logo, sort_order) VALUES (@tier_id, @name, @url, @logo, @sort_order)"
+          );
+          const colorByName: Record<string, string> = { gold: "gold", bronze: "bronze" };
+          db.transaction(() => {
+            for (let ti = 0; ti < raw.tiers.length; ti++) {
+              const tierColor = colorByName[raw.tiers[ti].name.toLowerCase()] ?? "silver";
+              const { lastInsertRowid } = insertTier.run({ name: raw.tiers[ti].name, color: tierColor, sort_order: ti });
+              for (let si = 0; si < raw.tiers[ti].sponsors.length; si++) {
+                insertSponsor.run({ tier_id: lastInsertRowid, sort_order: si, ...raw.tiers[ti].sponsors[si] });
+              }
+            }
+          })();
+        }
+      } catch {
+        // seeding failed; continue with empty sponsors
       }
     }
   }
@@ -183,4 +247,43 @@ export function getAllTeams(db: Database.Database): TeamsData {
     lastUpdated: meta.lastUpdated ?? new Date().toISOString(),
     teams,
   };
+}
+
+export function getAllSponsors(db: Database.Database): { tiers: SponsorTier[] } {
+  const tiers = db
+    .prepare("SELECT id, name, color FROM sponsor_tiers ORDER BY sort_order ASC")
+    .all() as { id: number; name: string; color: string }[];
+  const getSponsors = db.prepare(
+    "SELECT name, url, logo FROM sponsors WHERE tier_id = ? ORDER BY sort_order ASC"
+  );
+  return {
+    tiers: tiers.map((tier) => ({
+      name: tier.name,
+      color: tier.color,
+      sponsors: getSponsors.all(tier.id) as Sponsor[],
+    })),
+  };
+}
+
+export function saveSponsors(
+  db: Database.Database,
+  tiers: SponsorTier[]
+): { tiers: SponsorTier[] } {
+  db.transaction(() => {
+    db.prepare("DELETE FROM sponsors").run();
+    db.prepare("DELETE FROM sponsor_tiers").run();
+    const insertTier = db.prepare(
+      "INSERT INTO sponsor_tiers (name, color, sort_order) VALUES (@name, @color, @sort_order)"
+    );
+    const insertSponsor = db.prepare(
+      "INSERT INTO sponsors (tier_id, name, url, logo, sort_order) VALUES (@tier_id, @name, @url, @logo, @sort_order)"
+    );
+    for (let ti = 0; ti < tiers.length; ti++) {
+      const { lastInsertRowid } = insertTier.run({ name: tiers[ti].name, color: tiers[ti].color ?? "silver", sort_order: ti });
+      for (let si = 0; si < tiers[ti].sponsors.length; si++) {
+        insertSponsor.run({ tier_id: lastInsertRowid, sort_order: si, ...tiers[ti].sponsors[si] });
+      }
+    }
+  })();
+  return { tiers };
 }
