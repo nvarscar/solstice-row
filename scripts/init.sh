@@ -24,7 +24,7 @@ process.stdout.write(c.createHmac('sha256','$SECRET').update('$PASSWORD').digest
     echo "║      SOLSTICE ROW — ADMIN CREDENTIALS        ║"
     echo "╠══════════════════════════════════════════════╣"
     echo "║  Username : admin                            ║"
-    printf "║  Password : %-32s║\n" "$PASSWORD"
+    printf "║  Password : %-33s║\n" "$PASSWORD"
     echo "╠══════════════════════════════════════════════╣"
     echo "║  Visit /admin to log in.                     ║"
     echo "║  Change your password in Admin → Settings.   ║"

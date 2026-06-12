@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCredentials, verifyPassword, createToken } from "@/lib/auth";
+import { getCredentials, verifyPassword, createToken, isLegacyHash, hashPassword, saveCredentials } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   const { username, password } = await request.json();
@@ -14,6 +14,11 @@ export async function POST(request: NextRequest) {
 
   if (username !== creds.username || !verifyPassword(password, creds)) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
+
+  if (isLegacyHash(creds.passwordHash)) {
+    creds.passwordHash = hashPassword(password);
+    saveCredentials(creds);
   }
 
   const token = createToken(username, creds.secret);

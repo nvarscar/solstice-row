@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 
-const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || "1x0000000000000000000000000000000AA";
+const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY ?? null;
 
 function slugify(name: string): string {
   return name
@@ -12,6 +12,10 @@ function slugify(name: string): string {
 }
 
 async function verifyTurnstileToken(token: string): Promise<boolean> {
+  if (!TURNSTILE_SECRET_KEY) {
+    console.error("TURNSTILE_SECRET_KEY is not configured — registration blocked");
+    return false;
+  }
   const formData = new URLSearchParams();
   formData.append("secret", TURNSTILE_SECRET_KEY);
   formData.append("response", token);
@@ -43,6 +47,24 @@ export async function POST(request: NextRequest) {
         { error: "Missing required fields: name, captain, captainEmail, members" },
         { status: 400 }
       );
+    }
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_RE.test(String(captainEmail).trim())) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
+
+    const MAX_LENGTHS: Record<string, number> = {
+      name: 100, captain: 100, captainEmail: 254,
+      captainPhone: 30, club: 100, notes: 1000,
+    };
+    for (const [field, max] of Object.entries(MAX_LENGTHS)) {
+      if (String(body[field] ?? "").length > max) {
+        return NextResponse.json(
+          { error: `Field "${field}" exceeds maximum length of ${max} characters` },
+          { status: 400 }
+        );
+      }
     }
 
     if (!turnstileToken) {

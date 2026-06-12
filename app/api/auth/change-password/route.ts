@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  creds.passwordHash = hashPassword(newPassword, creds.secret);
+  creds.passwordHash = hashPassword(newPassword);
   saveCredentials(creds);
 
   return NextResponse.json({ success: true });
