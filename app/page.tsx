@@ -29,6 +29,7 @@ export default function Home() {
     <main>
       <Nav
         registrationOpen={eventData.registrationOpen}
+        photosEnabled={photosEnabled}
       />
 
       <Hero

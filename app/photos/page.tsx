@@ -4,6 +4,7 @@ import {
   listEventPhotos,
   listTeamPhotos,
   listBeforeAfterPairs,
+  hasAnyEnabledSection,
 } from "@/lib/db-photos";
 import Link from "next/link";
 import { ArrowLeft, Camera, Users, Repeat2 } from "lucide-react";
@@ -32,6 +33,7 @@ export default function PhotosPage() {
   const teamPhotos = sections.teams ? listTeamPhotos(db) : [];
   const beforeAfterPairs = sections.before_after ? listBeforeAfterPairs(db) : [];
 
+  const photosEnabled = hasAnyEnabledSection(db);
   const tzRow = db.prepare("SELECT value FROM meta WHERE key = 'eventTimezone'").get() as { value: string } | undefined;
   const timezone = tzRow?.value ?? "America/Vancouver";
   const tzAbbr = getTzAbbr(timezone);
@@ -64,7 +66,7 @@ export default function PhotosPage() {
 
   return (
     <>
-      <Nav registrationOpen={eventData.registrationOpen} />
+      <Nav registrationOpen={eventData.registrationOpen} photosEnabled={photosEnabled} />
 
       <main className="min-h-screen pt-20">
         {/* Page Header */}

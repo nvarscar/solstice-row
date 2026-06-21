@@ -15,9 +15,10 @@ const links = [
 
 interface NavProps {
   registrationOpen: boolean;
+  photosEnabled?: boolean;
 }
 
-export default function Nav({ registrationOpen }: NavProps) {
+export default function Nav({ registrationOpen, photosEnabled = false }: NavProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -50,7 +51,7 @@ export default function Nav({ registrationOpen }: NavProps) {
         </a>
 
         <ul className="hidden md:flex items-center gap-6">
-          {links.map((l) => (
+          {links.filter((l) => l.label !== "Photos" || photosEnabled).map((l) => (
             <li key={l.href}>
               <a
                 href={resolveHref(l.href)}
@@ -89,7 +90,7 @@ export default function Nav({ registrationOpen }: NavProps) {
       {open && (
         <div className="md:hidden bg-forest-950/98 backdrop-blur-md border-t border-white/10">
           <ul className="px-4 py-4 space-y-3">
-            {links.map((l) => (
+            {links.filter((l) => l.label !== "Photos" || photosEnabled).map((l) => (
               <li key={l.href}>
                 <a
                   href={resolveHref(l.href)}
