@@ -131,51 +131,7 @@ Edit `content/event.json`. Key fields:
 
 ## Project Structure
 
-```
-.
-├── app/
-│   ├── admin/
-│   │   ├── login/page.tsx      # Login page
-│   │   ├── dashboard/page.tsx  # Admin dashboard (team editor)
-│   │   └── page.tsx            # Redirects → /admin/dashboard
-│   ├── api/
-│   │   ├── auth/               # login / logout / change-password
-│   │   ├── content/[type]/     # GET + PUT for event/schedule/sponsors; GET for teams
-│   │   ├── content/teams/[id]/ # PATCH + DELETE for transactional team updates
-│   │   └── registrations/      # POST — public team registration endpoint
-│   ├── globals.css             # CSS variables + utility classes (no hardcoded colours)
-│   ├── layout.tsx
-│   └── page.tsx                # Public home page
-├── components/
-│   ├── Nav.tsx
-│   ├── Hero.tsx
-│   ├── About.tsx
-│   ├── Schedule.tsx
-│   ├── Results.tsx             # Team km leaderboard (live-polling)
-│   ├── Sponsors.tsx
-│   ├── Contact.tsx
-│   └── Footer.tsx
-├── content/                    # JSON content files (served + edited at runtime)
-│   ├── event.json
-│   ├── schedule.json
-│   └── sponsors.json
-├── lib/
-│   ├── auth.ts                 # Password hashing, token creation, credential I/O
-│   ├── db.ts                   # SQLite database singleton + team CRUD operations
-├── proxy.ts                    # Auth guard for /admin/* and /api/content/* (Next.js 16 proxy convention)
-├── nginx/
-│   ├── docker-entrypoint.sh    # Detects certs, selects http-only or https config
-│   ├── http-only.conf          # nginx config — HTTP proxy to web:3000
-│   └── https.conf              # nginx config — TLS termination + HTTP→HTTPS redirect
-├── scripts/
-│   ├── init.sh                 # First-run: generates admin password (DB seeds itself on first access)
-│   ├── issue-solsticerow.sh    # Let's Encrypt cert issuance (run from ~/certbot)
-│   └── renew-solsticerow.sh    # Let's Encrypt cert renewal  (run from ~/certbot)
-├── tailwind.config.ts          # Colour theme (forest green + gold)
-├── docker-compose.yml          # Production
-├── docker-compose.dev.yml      # Development (hot-reload)
-└── Dockerfile                  # Multi-stage: dev / deps / builder / runner
-```
+Standard Next.js App Router layout. Pages go in `app/`, shared UI components in `components/`, server utilities in `lib/`, static assets in `public/`, and runtime JSON content in `content/`.
 
 ---
 

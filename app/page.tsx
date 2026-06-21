@@ -1,10 +1,12 @@
 import { getDb, getAllScheduleItems, getAllSponsors, getAllTeams } from "@/lib/db";
+import { hasAnyEnabledSection } from "@/lib/db-photos";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
 import Schedule from "@/components/Schedule";
 import Results from "@/components/Results";
 import Sponsors from "@/components/Sponsors";
+import PhotosBanner from "@/components/PhotosBanner";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 
@@ -21,6 +23,7 @@ export default function Home() {
     ...teamsRaw,
     teams: teamsRaw.teams.filter((t) => t.status === "approved"),
   };
+  const photosEnabled = hasAnyEnabledSection(db);
 
   return (
     <main>
@@ -52,6 +55,8 @@ export default function Home() {
       <Schedule items={scheduleItems} date={eventData.date} />
 
       <Results teamsData={teamsData} />
+
+      {photosEnabled && <PhotosBanner eventName={eventData.name} />}
 
       <Sponsors tiers={sponsorTiers} />
 

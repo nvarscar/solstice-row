@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X, Waves } from "lucide-react";
 
 const links = [
   { label: "About", href: "#about" },
   { label: "Schedule", href: "#schedule" },
   { label: "Results", href: "#results" },
+  { label: "Photos", href: "/#photos" },
   { label: "Sponsors", href: "#sponsors" },
   { label: "Contact", href: "#contact" },
 ];
@@ -18,6 +20,12 @@ interface NavProps {
 export default function Nav({ registrationOpen }: NavProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
+  // On non-home pages, bare hash links must include "/" to navigate home first.
+  const resolveHref = (href: string) =>
+    !isHome && href.startsWith("#") ? "/" + href : href;
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 40);
@@ -34,7 +42,7 @@ export default function Nav({ registrationOpen }: NavProps) {
       }`}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <a href="#" className="flex items-center gap-2 group">
+        <a href="/" className="flex items-center gap-2 group">
           <Waves className="w-6 h-6 text-solstice-gold group-hover:text-solstice-dawn transition-colors" />
           <span className="font-bold text-white text-lg tracking-tight">
             Solstice<span className="text-solstice-gold">Row</span>
@@ -45,7 +53,7 @@ export default function Nav({ registrationOpen }: NavProps) {
           {links.map((l) => (
             <li key={l.href}>
               <a
-                href={l.href}
+                href={resolveHref(l.href)}
                 className="text-sm text-forest-200 hover:text-white transition-colors duration-200"
               >
                 {l.label}
@@ -84,7 +92,7 @@ export default function Nav({ registrationOpen }: NavProps) {
             {links.map((l) => (
               <li key={l.href}>
                 <a
-                  href={l.href}
+                  href={resolveHref(l.href)}
                   onClick={() => setOpen(false)}
                   className="block text-forest-200 hover:text-white py-1 transition-colors"
                 >

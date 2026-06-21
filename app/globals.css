@@ -135,6 +135,11 @@ body {
   background: linear-gradient(to bottom, rgb(var(--forest-950)), rgb(var(--forest-900)));
 }
 
+@keyframes slideshow-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
 /* Hero SVG wave fills */
 .hero-wave-upper {
   fill: rgb(var(--forest-800) / 0.4);

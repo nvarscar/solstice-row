@@ -19,9 +19,11 @@ import {
   Plus,
   Star,
   ChevronDown,
+  Camera,
 } from "lucide-react";
 import clsx from "clsx";
 import { TIER_COLORS } from "@/lib/sponsor-colors";
+import PhotosTab from "./PhotosTab";
 
 interface Team {
   id: string;
@@ -65,7 +67,7 @@ interface SponsorTier {
   sponsors: Sponsor[];
 }
 
-type Tab = "leaderboard" | "teams" | "schedule" | "sponsors" | "password";
+type Tab = "leaderboard" | "teams" | "schedule" | "sponsors" | "photos" | "password";
 
 function StatusBadge({ msg, type }: { msg: string; type: "ok" | "err" | null }) {
   if (!msg) return null;
@@ -910,6 +912,7 @@ export default function DashboardPage() {
               },
               { id: "schedule", label: "Schedule", icon: Calendar },
               { id: "sponsors", label: "Sponsors", icon: Star },
+              { id: "photos", label: "Photos", icon: Camera },
               { id: "password", label: "Change Password", icon: Key },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
@@ -1394,6 +1397,9 @@ export default function DashboardPage() {
             )}
           </div>
         )}
+
+        {/* ── Photos Tab ── */}
+        {tab === "photos" && <PhotosTab />}
 
         {/* ── Password Tab ── */}
         {tab === "password" && (

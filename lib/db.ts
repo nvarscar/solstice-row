@@ -114,6 +114,32 @@ function initSchema(db: Database.Database): void {
       status       TEXT NOT NULL DEFAULT 'pending',
       registeredAt TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS photo_sections (
+      section TEXT PRIMARY KEY,
+      enabled INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS event_photos (
+      id         TEXT PRIMARY KEY,
+      filename   TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS team_photos (
+      id         TEXT PRIMARY KEY,
+      team_id    TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+      filename   TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS before_after_pairs (
+      id             TEXT PRIMARY KEY,
+      team_id        TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+      before_id      TEXT NOT NULL,
+      after_id       TEXT NOT NULL,
+      shift_minutes  INTEGER,
+      created_at     TEXT NOT NULL
+    );
   `);
 
   try {
@@ -124,10 +150,23 @@ function initSchema(db: Database.Database): void {
     // column already exists – nothing to do
   }
 
+  try {
+    db.exec("ALTER TABLE before_after_pairs ADD COLUMN before_taken_at TEXT");
+  } catch { /* already exists */ }
+  try {
+    db.exec("ALTER TABLE before_after_pairs ADD COLUMN after_taken_at TEXT");
+  } catch { /* already exists */ }
+
   const insertMeta = db.prepare("INSERT OR IGNORE INTO meta (key, value) VALUES (?, ?)");
   insertMeta.run("eventYear", new Date().getFullYear().toString());
   insertMeta.run("eventDate", "");
   insertMeta.run("lastUpdated", new Date().toISOString());
+  insertMeta.run("eventTimezone", "America/Vancouver");
+
+  const insertSection = db.prepare("INSERT OR IGNORE INTO photo_sections (section, enabled) VALUES (?, 0)");
+  insertSection.run("event");
+  insertSection.run("teams");
+  insertSection.run("before_after");
 
   const { sc } = db.prepare("SELECT COUNT(*) as sc FROM schedule_items").get() as { sc: number };
   if (sc === 0) {
