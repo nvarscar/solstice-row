@@ -5,13 +5,13 @@ import {
   listTeamPhotos,
   listBeforeAfterPairs,
 } from "@/lib/db-photos";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Camera, Users, Repeat2 } from "lucide-react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import TeamSlideshow from "./TeamSlideshow";
 import BeforeAfterCard from "./BeforeAfterCard";
+import EventPhotoGallery from "./EventPhotoGallery";
 import eventData from "@/content/event.json";
 
 export const dynamic = "force-dynamic";
@@ -100,30 +100,7 @@ export default function PhotosPage() {
                   <Camera className="w-6 h-6 text-solstice-gold" />
                   <h2 className="text-2xl font-bold text-white">Event Photos</h2>
                 </div>
-                <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-                  {eventPhotos.map((photo) => (
-                    <div
-                      key={photo.id}
-                      className="break-inside-avoid rounded-xl overflow-hidden relative group"
-                    >
-                      <div className="relative w-full">
-                        <Image
-                          src={`/api/photos/${photo.id}`}
-                          alt={photo.description || "Event photo"}
-                          width={600}
-                          height={450}
-                          className="w-full object-cover rounded-xl"
-                          unoptimized
-                        />
-                      </div>
-                      {photo.description && (
-                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 rounded-b-xl">
-                          <p className="text-white text-sm">{photo.description}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <EventPhotoGallery photos={eventPhotos} />
               </section>
             )}
 

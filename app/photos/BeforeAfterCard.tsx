@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from "react";
 import Image from "next/image";
+import { Maximize2 } from "lucide-react";
+import PhotoLightbox from "./PhotoLightbox";
 
 function formatShiftDuration(minutes: number | null | undefined): string {
   if (minutes == null || minutes <= 0) return "";
@@ -83,6 +85,7 @@ function ShiftTimeline({
 export default function BeforeAfterCard({ teamName, beforeId, afterId, shiftMinutes, startTime, endTime, tzAbbr }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dividerPct, setDividerPct] = useState(50);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const dividerRef = useRef(50);
   const rafRef = useRef<number | null>(null);
   const dragging = useRef(false);
@@ -136,11 +139,19 @@ export default function BeforeAfterCard({ teamName, beforeId, afterId, shiftMinu
   const onTouchEnd = () => { dragging.current = false; };
 
   return (
+    <>
     <div className="card-glass rounded-2xl overflow-hidden">
       {/* Team name header */}
       <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
         <span className="text-white font-semibold">{teamName}</span>
-        <span className="text-forest-400 text-xs">Drag to compare</span>
+        <button
+          onClick={() => setLightboxIndex(0)}
+          aria-label="View photos full size"
+          className="flex items-center gap-1.5 text-forest-400 hover:text-white text-xs transition-colors"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+          Expand
+        </button>
       </div>
 
       {/* Comparison slider */}
@@ -216,5 +227,18 @@ export default function BeforeAfterCard({ teamName, beforeId, afterId, shiftMinu
 
       <ShiftTimeline minutes={shiftMinutes} startTime={startTime} endTime={endTime} tzAbbr={tzAbbr} />
     </div>
+
+    {lightboxIndex !== null && (
+      <PhotoLightbox
+        photos={[
+          { id: beforeId, description: "Start" },
+          { id: afterId, description: "Finish" },
+        ]}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onNavigate={setLightboxIndex}
+      />
+    )}
+    </>
   );
 }

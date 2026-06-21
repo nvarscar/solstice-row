@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import Image from "next/image";
+import PhotoLightbox from "./PhotoLightbox";
 
 interface Props {
   teamName: string;
@@ -13,6 +14,7 @@ interface Props {
 export default function TeamSlideshow({ teamName, photoIds, intervalMs = 10000 }: Props) {
   const [index, setIndex] = useState(0);
   const [progressKey, setProgressKey] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetTimer = useCallback(() => {
@@ -39,8 +41,16 @@ export default function TeamSlideshow({ teamName, photoIds, intervalMs = 10000 }
   if (photoIds.length === 0) return null;
 
   return (
+    <>
     <div className="card-glass rounded-2xl overflow-hidden">
       <div className="relative aspect-[4/3] bg-black/20">
+        <button
+          className="absolute inset-0 z-[5] group cursor-zoom-in"
+          onClick={() => setLightboxIndex(index)}
+          aria-label={`View ${teamName} photo ${index + 1} full size`}
+        >
+          <Maximize2 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+        </button>
         <Image
           src={`/api/photos/${photoIds[index]}`}
           alt={`${teamName} — photo ${index + 1}`}
@@ -107,5 +117,15 @@ export default function TeamSlideshow({ teamName, photoIds, intervalMs = 10000 }
         </p>
       </div>
     </div>
+
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={photoIds.map((id) => ({ id }))}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+        />
+      )}
+    </>
   );
 }
