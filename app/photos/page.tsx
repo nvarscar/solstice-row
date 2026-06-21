@@ -133,7 +133,7 @@ export default function PhotosPage() {
                   <h2 className="text-2xl font-bold text-white">The Grind</h2>
                 </div>
                 <p className="text-forest-400 text-sm mb-8">
-                  Drag the divider to see each team from start to finish.
+                  Drag the divider to follow each team's journey through the race.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {beforeAfterPairs.map((pair) => (

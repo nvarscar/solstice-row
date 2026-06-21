@@ -22,7 +22,7 @@ export default function PhotosBanner({ eventName }: PhotosBannerProps) {
             Event Photos
           </h2>
           <p className="text-forest-300 text-lg mb-8 max-w-2xl mx-auto">
-            Relive {eventName} — team galleries, before & after transformations,
+            Relive {eventName} — team galleries, race highlights,
             and moments from the water.
           </p>
 
