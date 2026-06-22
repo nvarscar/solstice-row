@@ -20,6 +20,7 @@ import {
   Star,
   ChevronDown,
   Camera,
+  Settings,
 } from "lucide-react";
 import clsx from "clsx";
 import { TIER_COLORS } from "@/lib/sponsor-colors";
@@ -67,7 +68,31 @@ interface SponsorTier {
   sponsors: Sponsor[];
 }
 
-type Tab = "leaderboard" | "teams" | "schedule" | "sponsors" | "photos" | "password";
+type Tab = "leaderboard" | "teams" | "schedule" | "sponsors" | "photos" | "settings" | "password";
+
+interface EventConfig {
+  siteUrl: string;
+  name: string;
+  tagline: string;
+  edition: string;
+  date: string;
+  sunriseTime: string;
+  sunsetTime: string;
+  location: string;
+  venue: string;
+  address: string;
+  description: string;
+  heroSubtitle: string;
+  cause: string;
+  donationUrl: string;
+  registrationOpen: boolean;
+  registrationDeadline: string;
+  contactEmail: string;
+  contactPhone: string;
+  prizes: string[];
+  amenities: string[];
+  format: string;
+}
 
 function StatusBadge({ msg, type }: { msg: string; type: "ok" | "err" | null }) {
   if (!msg) return null;
@@ -99,6 +124,7 @@ function Field({
   required,
   placeholder,
   multiline,
+  rows = 2,
 }: {
   label: string;
   value: string;
@@ -108,6 +134,7 @@ function Field({
   required?: boolean;
   placeholder?: string;
   multiline?: boolean;
+  rows?: number;
 }) {
   const cls =
     "w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-solstice-gold/50";
@@ -123,7 +150,7 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           placeholder={placeholder}
-          rows={2}
+          rows={rows}
           className={`${cls} resize-none`}
         />
       ) : (
@@ -514,6 +541,12 @@ export default function DashboardPage() {
   const [sponsorsDirty, setSponsorsDirty] = useState(false);
   const [sponsorsStatus, setSponsorsStatus] = useState<{ msg: string; type: "ok" | "err" | null }>({ msg: "", type: null });
 
+  const [eventDraft, setEventDraft] = useState<EventConfig | null>(null);
+  const [eventLoaded, setEventLoaded] = useState(false);
+  const [eventSaving, setEventSaving] = useState(false);
+  const [eventDirty, setEventDirty] = useState(false);
+  const [eventStatus, setEventStatus] = useState<{ msg: string; type: "ok" | "err" | null }>({ msg: "", type: null });
+
   function markDirty(id: string) {
     dirtyRef.current = new Set(dirtyRef.current).add(id);
     setDirtyTeamIdsState(new Set(dirtyRef.current));
@@ -583,6 +616,18 @@ export default function DashboardPage() {
     }
   }, [router]);
 
+  const loadEventConfig = useCallback(async () => {
+    try {
+      const res = await fetch("/api/content/event");
+      if (res.status === 401) { router.push("/admin/login"); return; }
+      setEventDraft(await res.json());
+      setEventLoaded(true);
+      setEventDirty(false);
+    } catch {
+      setEventStatus({ msg: "Failed to load event settings", type: "err" });
+    }
+  }, [router]);
+
   useEffect(() => { loadTeams(); }, [loadTeams]);
 
   useEffect(() => {
@@ -592,6 +637,10 @@ export default function DashboardPage() {
   useEffect(() => {
     if (tab === "sponsors" && !sponsorsLoaded) loadSponsors();
   }, [tab, sponsorsLoaded, loadSponsors]);
+
+  useEffect(() => {
+    if (tab === "settings" && !eventLoaded) loadEventConfig();
+  }, [tab, eventLoaded, loadEventConfig]);
 
   useEffect(() => { setStatus({ msg: "", type: null }); }, [tab]);
 
@@ -787,6 +836,69 @@ export default function DashboardPage() {
     setPwSaving(false);
   }
 
+  function updateEventDraft<K extends keyof EventConfig>(field: K, value: EventConfig[K]) {
+    setEventDraft((prev) => (prev ? { ...prev, [field]: value } : prev));
+    setEventDirty(true);
+    setEventStatus({ msg: "", type: null });
+  }
+
+  async function toggleRegistration() {
+    if (!eventDraft) return;
+    const next = { ...eventDraft, registrationOpen: !eventDraft.registrationOpen };
+    setEventDraft(next);
+    setEventSaving(true);
+    setEventStatus({ msg: "", type: null });
+    try {
+      const res = await fetch("/api/content/event", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      if (res.ok) {
+        setEventDirty(false);
+        setEventStatus({
+          msg: next.registrationOpen ? "Registration opened!" : "Registration closed.",
+          type: "ok",
+        });
+        setTimeout(() => setEventStatus({ msg: "", type: null }), 3000);
+      } else {
+        setEventStatus({ msg: "Failed to save setting", type: "err" });
+      }
+    } catch {
+      setEventStatus({ msg: "Network error", type: "err" });
+    }
+    setEventSaving(false);
+  }
+
+  async function saveEventDraft() {
+    if (!eventDraft) return;
+    const cleaned = {
+      ...eventDraft,
+      prizes: eventDraft.prizes.filter((s) => s.trim() !== ""),
+      amenities: eventDraft.amenities.filter((s) => s.trim() !== ""),
+    };
+    setEventSaving(true);
+    setEventStatus({ msg: "", type: null });
+    try {
+      const res = await fetch("/api/content/event", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cleaned),
+      });
+      if (res.ok) {
+        setEventDraft(cleaned);
+        setEventDirty(false);
+        setEventStatus({ msg: "Event settings saved!", type: "ok" });
+        setTimeout(() => setEventStatus({ msg: "", type: null }), 3000);
+      } else {
+        setEventStatus({ msg: "Failed to save event settings", type: "err" });
+      }
+    } catch {
+      setEventStatus({ msg: "Network error", type: "err" });
+    }
+    setEventSaving(false);
+  }
+
   async function handleSaveSponsors() {
     setSponsorsSaving(true);
     setSponsorsStatus({ msg: "", type: null });
@@ -913,6 +1025,7 @@ export default function DashboardPage() {
               { id: "schedule", label: "Schedule", icon: Calendar },
               { id: "sponsors", label: "Sponsors", icon: Star },
               { id: "photos", label: "Photos", icon: Camera },
+              { id: "settings", label: "Settings", icon: Settings },
               { id: "password", label: "Change Password", icon: Key },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
@@ -1400,6 +1513,158 @@ export default function DashboardPage() {
 
         {/* ── Photos Tab ── */}
         {tab === "photos" && <PhotosTab />}
+
+        {/* ── Settings Tab ── */}
+        {tab === "settings" && (
+          <div className="space-y-6">
+            <div className="flex items-start justify-between gap-2 flex-wrap">
+              <div>
+                <h2 className="text-white text-xl font-bold">Event Settings</h2>
+                <p className="text-forest-400 text-xs mt-0.5">Registration, event details, and content</p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => { setEventLoaded(false); loadEventConfig(); }}
+                  className="flex items-center gap-1.5 px-3 py-2 card-glass rounded-lg text-forest-200 text-sm hover:bg-white/10 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reload
+                </button>
+                {eventDirty && (
+                  <button
+                    onClick={saveEventDraft}
+                    disabled={eventSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-solstice-gold text-forest-950 rounded-lg text-sm font-bold hover:bg-solstice-gold-light disabled:opacity-50 transition-colors"
+                  >
+                    {eventSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Changes
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {eventStatus.msg && <StatusBadge msg={eventStatus.msg} type={eventStatus.type} />}
+
+            {!eventLoaded ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-forest-400" />
+              </div>
+            ) : eventDraft && (
+              <div className="space-y-6">
+
+                {/* Registration */}
+                <div className="card-glass rounded-2xl p-6 space-y-4">
+                  <h3 className="text-forest-300 text-xs font-semibold uppercase tracking-wide">Registration</h3>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-white font-semibold text-sm">Accept Registrations</p>
+                      <p className="text-forest-400 text-xs mt-0.5">
+                        {eventDraft.registrationOpen
+                          ? "Open — register button visible on site"
+                          : "Closed — register button hidden from site"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={toggleRegistration}
+                      disabled={eventSaving}
+                      aria-label="Toggle registration"
+                      className={clsx(
+                        "relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full border-2 transition-colors duration-200 focus:outline-none disabled:opacity-50",
+                        eventDraft.registrationOpen
+                          ? "bg-green-500 border-green-500"
+                          : "bg-white/20 border-white/20"
+                      )}
+                    >
+                      <span
+                        className={clsx(
+                          "inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200",
+                          eventDraft.registrationOpen ? "translate-x-5" : "translate-x-0.5"
+                        )}
+                      />
+                    </button>
+                  </div>
+                  <Field
+                    label="Registration Deadline"
+                    value={eventDraft.registrationDeadline}
+                    onChange={(v) => updateEventDraft("registrationDeadline", v)}
+                    placeholder="e.g. June 18, 2026"
+                  />
+                </div>
+
+                {/* Event Info */}
+                <div className="card-glass rounded-2xl p-6 space-y-4">
+                  <h3 className="text-forest-300 text-xs font-semibold uppercase tracking-wide">Event Info</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field label="Event Name" value={eventDraft.name} onChange={(v) => updateEventDraft("name", v)} required />
+                    <Field label="Edition / Year" value={eventDraft.edition} onChange={(v) => updateEventDraft("edition", v)} />
+                    <Field label="Tagline" value={eventDraft.tagline} onChange={(v) => updateEventDraft("tagline", v)} />
+                    <Field label="Date" value={eventDraft.date} onChange={(v) => updateEventDraft("date", v)} placeholder="e.g. June 21, 2026" />
+                    <Field label="Sunrise Time" value={eventDraft.sunriseTime} onChange={(v) => updateEventDraft("sunriseTime", v)} placeholder="e.g. 5:11 AM" />
+                    <Field label="Sunset Time" value={eventDraft.sunsetTime} onChange={(v) => updateEventDraft("sunsetTime", v)} placeholder="e.g. 9:18 PM" />
+                    <Field label="Venue" value={eventDraft.venue} onChange={(v) => updateEventDraft("venue", v)} />
+                    <Field label="Location" value={eventDraft.location} onChange={(v) => updateEventDraft("location", v)} />
+                    <div className="sm:col-span-2">
+                      <Field label="Address" value={eventDraft.address} onChange={(v) => updateEventDraft("address", v)} />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Field label="Hero Subtitle" value={eventDraft.heroSubtitle} onChange={(v) => updateEventDraft("heroSubtitle", v)} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="card-glass rounded-2xl p-6 space-y-4">
+                  <h3 className="text-forest-300 text-xs font-semibold uppercase tracking-wide">Content</h3>
+                  <Field label="Description" value={eventDraft.description} onChange={(v) => updateEventDraft("description", v)} multiline rows={4} />
+                  <Field label="Cause" value={eventDraft.cause} onChange={(v) => updateEventDraft("cause", v)} />
+                  <Field label="Format / Rules" value={eventDraft.format} onChange={(v) => updateEventDraft("format", v)} multiline rows={4} />
+                </div>
+
+                {/* Links & Contact */}
+                <div className="card-glass rounded-2xl p-6 space-y-4">
+                  <h3 className="text-forest-300 text-xs font-semibold uppercase tracking-wide">Links &amp; Contact</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Field label="Donation URL" value={eventDraft.donationUrl} onChange={(v) => updateEventDraft("donationUrl", v)} type="url" placeholder="https://" />
+                    <Field label="Site URL" value={eventDraft.siteUrl} onChange={(v) => updateEventDraft("siteUrl", v)} type="url" placeholder="https://" />
+                    <Field label="Contact Email" value={eventDraft.contactEmail} onChange={(v) => updateEventDraft("contactEmail", v)} type="email" />
+                    <Field label="Contact Phone" value={eventDraft.contactPhone} onChange={(v) => updateEventDraft("contactPhone", v)} type="tel" />
+                  </div>
+                </div>
+
+                {/* Awards & Amenities */}
+                <div className="card-glass rounded-2xl p-6 space-y-4">
+                  <h3 className="text-forest-300 text-xs font-semibold uppercase tracking-wide">Awards &amp; Amenities</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-forest-300 mb-1">Prizes (one per line)</label>
+                      <textarea
+                        value={eventDraft.prizes.join("\n")}
+                        onChange={(e) => updateEventDraft("prizes", e.target.value.split("\n"))}
+                        rows={4}
+                        placeholder={"Best Team Name\nMost Kilometers\nMost Money Raised"}
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-solstice-gold/50 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-forest-300 mb-1">Amenities (one per line)</label>
+                      <textarea
+                        value={eventDraft.amenities.join("\n")}
+                        onChange={(e) => updateEventDraft("amenities", e.target.value.split("\n"))}
+                        rows={4}
+                        placeholder={"Hourly Raffles\n50/50 Draw\nMusic"}
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-solstice-gold/50 resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-forest-500 text-xs text-center">
+                  The registration toggle saves immediately. All other changes require clicking Save Changes.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Password Tab ── */}
         {tab === "password" && (

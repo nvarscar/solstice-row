@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { getDb, getEventConfig } from "@/lib/db";
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY ?? null;
 
@@ -39,6 +39,11 @@ async function verifyTurnstileToken(token: string): Promise<boolean> {
 
 export async function POST(request: NextRequest) {
   try {
+    const eventConfig = getEventConfig(getDb());
+    if (!eventConfig.registrationOpen) {
+      return NextResponse.json({ error: "Registration is currently closed." }, { status: 403 });
+    }
+
     const body = await request.json();
     const { name, captain, captainEmail, members, turnstileToken } = body;
 

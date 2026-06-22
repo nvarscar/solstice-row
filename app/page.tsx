@@ -1,4 +1,4 @@
-import { getDb, getAllScheduleItems, getAllSponsors, getAllTeams } from "@/lib/db";
+import { getDb, getAllScheduleItems, getAllSponsors, getAllTeams, getEventConfig } from "@/lib/db";
 import { hasAnyEnabledSection } from "@/lib/db-photos";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
@@ -10,12 +10,11 @@ import PhotosBanner from "@/components/PhotosBanner";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 
-import eventData from "@/content/event.json";
-
 export const dynamic = "force-dynamic";
 
 export default function Home() {
   const db = getDb();
+  const eventData = getEventConfig(db);
   const scheduleItems = getAllScheduleItems(db);
   const { tiers: sponsorTiers } = getAllSponsors(db);
   const teamsRaw = getAllTeams(db);

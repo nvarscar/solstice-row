@@ -44,6 +44,30 @@ export interface SponsorTier {
   sponsors: Sponsor[];
 }
 
+export interface EventConfig {
+  siteUrl: string;
+  name: string;
+  tagline: string;
+  edition: string;
+  date: string;
+  sunriseTime: string;
+  sunsetTime: string;
+  location: string;
+  venue: string;
+  address: string;
+  description: string;
+  heroSubtitle: string;
+  cause: string;
+  donationUrl: string;
+  registrationOpen: boolean;
+  registrationDeadline: string;
+  contactEmail: string;
+  contactPhone: string;
+  prizes: string[];
+  amenities: string[];
+  format: string;
+}
+
 function parseScheduleMinutes(t: string): number {
   const m = t.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
   if (!m) return 0;
@@ -140,6 +164,10 @@ function initSchema(db: Database.Database): void {
       shift_minutes  INTEGER,
       created_at     TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS event_config (
+      id   INTEGER PRIMARY KEY DEFAULT 1,
+      data TEXT NOT NULL DEFAULT '{}'
+    );
   `);
 
   try {
@@ -167,6 +195,17 @@ function initSchema(db: Database.Database): void {
   insertSection.run("event");
   insertSection.run("teams");
   insertSection.run("before_after");
+
+  const { ecc } = db.prepare("SELECT COUNT(*) as ecc FROM event_config WHERE id = 1").get() as { ecc: number };
+  if (ecc === 0) {
+    const eventJsonPath = path.join(process.cwd(), "content", "event.json");
+    if (fs.existsSync(eventJsonPath)) {
+      try {
+        const raw = fs.readFileSync(eventJsonPath, "utf-8");
+        db.prepare("INSERT OR IGNORE INTO event_config (id, data) VALUES (1, ?)").run(raw);
+      } catch { /* seeding failed */ }
+    }
+  }
 
   const { sc } = db.prepare("SELECT COUNT(*) as sc FROM schedule_items").get() as { sc: number };
   if (sc === 0) {
@@ -223,6 +262,20 @@ function initSchema(db: Database.Database): void {
     }
   }
 
+}
+
+export function getEventConfig(db: Database.Database): EventConfig {
+  const row = db.prepare("SELECT data FROM event_config WHERE id = 1").get() as { data: string } | undefined;
+  if (!row) {
+    const fallback = path.join(process.cwd(), "content", "event.json");
+    return JSON.parse(fs.readFileSync(fallback, "utf-8")) as EventConfig;
+  }
+  return JSON.parse(row.data) as EventConfig;
+}
+
+export function saveEventConfig(db: Database.Database, config: EventConfig): EventConfig {
+  db.prepare("INSERT OR REPLACE INTO event_config (id, data) VALUES (1, ?)").run(JSON.stringify(config));
+  return config;
 }
 
 export function getAllScheduleItems(db: Database.Database): ScheduleItem[] {

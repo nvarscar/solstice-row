@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import fs from "fs";
 import path from "path";
 import { getCredentials, verifyToken } from "@/lib/auth";
-import { getDb, getAllTeams, getAllScheduleItems, saveScheduleItems, getAllSponsors, saveSponsors } from "@/lib/db";
+import { getDb, getAllTeams, getAllScheduleItems, saveScheduleItems, getAllSponsors, saveSponsors, getEventConfig, saveEventConfig, EventConfig } from "@/lib/db";
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
 const ALLOWED = ["event", "schedule", "teams", "sponsors"];
@@ -53,6 +53,14 @@ export async function GET(
       return NextResponse.json({ error: "Failed to load sponsors" }, { status: 500 });
     }
   }
+  if (type === "event") {
+    try {
+      return NextResponse.json(getEventConfig(getDb()));
+    } catch (err) {
+      console.error("Failed to load event config:", err);
+      return NextResponse.json({ error: "Failed to load event config" }, { status: 500 });
+    }
+  }
   try {
     const data = JSON.parse(fs.readFileSync(contentFilePath(type), "utf-8"));
     return NextResponse.json(data);
@@ -100,6 +108,15 @@ export async function PUT(
       return NextResponse.json(result);
     } catch {
       return NextResponse.json({ error: "Failed to save sponsors" }, { status: 500 });
+    }
+  }
+  if (type === "event") {
+    try {
+      const body = await request.json();
+      const saved = saveEventConfig(getDb(), body as EventConfig);
+      return NextResponse.json(saved);
+    } catch {
+      return NextResponse.json({ error: "Failed to save event config" }, { status: 500 });
     }
   }
   try {
