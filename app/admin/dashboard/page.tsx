@@ -525,6 +525,7 @@ export default function DashboardPage() {
   const [metricsDraft, setMetricsDraft] = useState<Record<string, { boatM?: string; ergM?: string }>>({});
   const [sortBy, setSortBy] = useState<"name" | "distance">("name");
   const dirtyRef = useRef(new Set<string>());
+  const anyDirtyRef = useRef(false);
   const [dirtyTeamIds, setDirtyTeamIdsState] = useState(new Set<string>());
   const [savingTeamIds, setSavingTeamIds] = useState(new Set<string>());
   const [teamSaveStatus, setTeamSaveStatus] = useState<Record<string, "ok" | "err">>({});
@@ -561,6 +562,27 @@ export default function DashboardPage() {
   function clearAllDirty() {
     dirtyRef.current = new Set();
     setDirtyTeamIdsState(new Set());
+  }
+
+  function handleTabChange(newTab: Tab) {
+    if (newTab === tab) return;
+    const dirty: string[] = [];
+    if (dirtyTeamIds.size > 0) dirty.push(`${dirtyTeamIds.size} team${dirtyTeamIds.size > 1 ? "s" : ""}`);
+    if (scheduleDirty) dirty.push("schedule");
+    if (sponsorsDirty) dirty.push("sponsors");
+    if (eventDirty) dirty.push("event settings");
+    if (dirty.length > 0) {
+      const joined =
+        dirty.length === 1
+          ? dirty[0]
+          : `${dirty.slice(0, -1).join(", ")} and ${dirty[dirty.length - 1]}`;
+      if (!confirm(`You have unsaved changes to ${joined}. Switch tabs and discard these changes?`)) return;
+      if (dirtyTeamIds.size > 0) { clearAllDirty(); setMetricsDraft({}); setAddDelta({}); }
+      if (scheduleDirty) { setScheduleDirty(false); setScheduleLoaded(false); }
+      if (sponsorsDirty) { setSponsorsDirty(false); setSponsorsLoaded(false); }
+      if (eventDirty) { setEventDirty(false); setEventLoaded(false); }
+    }
+    setTab(newTab);
   }
 
   const [pwForm, setPwForm] = useState({
@@ -645,8 +667,12 @@ export default function DashboardPage() {
   useEffect(() => { setStatus({ msg: "", type: null }); }, [tab]);
 
   useEffect(() => {
+    anyDirtyRef.current = dirtyTeamIds.size > 0 || scheduleDirty || sponsorsDirty || eventDirty;
+  }, [dirtyTeamIds, scheduleDirty, sponsorsDirty, eventDirty]);
+
+  useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
-      if (dirtyRef.current.size > 0) {
+      if (anyDirtyRef.current) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -1031,7 +1057,7 @@ export default function DashboardPage() {
           ).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setTab(id)}
+              onClick={() => handleTabChange(id)}
               className={clsx(
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                 tab === id
@@ -1098,7 +1124,7 @@ export default function DashboardPage() {
               <div className="card-glass rounded-2xl p-12 text-center">
                 <p className="text-forest-300">
                   No approved teams yet. Approve teams in the{" "}
-                  <button onClick={() => setTab("teams")} className="text-solstice-gold underline">
+                  <button onClick={() => handleTabChange("teams")} className="text-solstice-gold underline">
                     Teams tab
                   </button>
                   .
@@ -1301,7 +1327,10 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <button
-                  onClick={() => { setScheduleLoaded(false); loadSchedule(); }}
+                  onClick={() => {
+                    if (scheduleDirty && !confirm("You have unsaved schedule changes. Reload and discard them?")) return;
+                    setScheduleLoaded(false); loadSchedule();
+                  }}
                   className="flex items-center gap-1.5 px-3 py-2 card-glass rounded-lg text-forest-200 text-sm hover:bg-white/10 transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -1383,7 +1412,10 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <button
-                  onClick={() => { setSponsorsLoaded(false); loadSponsors(); }}
+                  onClick={() => {
+                    if (sponsorsDirty && !confirm("You have unsaved sponsor changes. Reload and discard them?")) return;
+                    setSponsorsLoaded(false); loadSponsors();
+                  }}
                   className="flex items-center gap-1.5 px-3 py-2 card-glass rounded-lg text-forest-200 text-sm hover:bg-white/10 transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -1524,7 +1556,10 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <button
-                  onClick={() => { setEventLoaded(false); loadEventConfig(); }}
+                  onClick={() => {
+                    if (eventDirty && !confirm("You have unsaved event settings changes. Reload and discard them?")) return;
+                    setEventLoaded(false); loadEventConfig();
+                  }}
                   className="flex items-center gap-1.5 px-3 py-2 card-glass rounded-lg text-forest-200 text-sm hover:bg-white/10 transition-colors"
                 >
                   <RefreshCw className="w-4 h-4" />
